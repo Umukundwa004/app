@@ -1,25 +1,30 @@
 {
-  "name": "forecasting-1",
+  "name": "rwanda-eats-reserve",
   "version": "1.0.0",
+  "description": "Restaurant reservation system for Rwanda",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Umukundwa004/forecasting.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Umukundwa004/forecasting/issues"
-  },
-  "homepage": "https://github.com/Umukundwa004/forecasting#readme",
-  "description": "",
   "dependencies": {
-    "express": "^5.1.0",
-    "mongoose": "^8.18.0"
-  }
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.0",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "restaurant",
+    "reservation",
+    "rwanda",
+    "booking"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }

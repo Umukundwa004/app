@@ -1,0 +1,337 @@
+<!-- views/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Rwanda Eats Reserve</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brown: {
+                            50: '#fdf8f6',
+                            100: '#f2e8e5',
+                            200: '#eaddd7',
+                            300: '#e0cec7',
+                            400: '#d2bab0',
+                            500: '#bfa094',
+                            600: '#a18072',
+                            700: '#977669',
+                            800: '#846358',
+                            900: '#43302b',
+                        },
+                        cream: {
+                            50: '#fefefe',
+                            100: '#fdfbf6',
+                            200: '#fbf7ed',
+                            300: '#f8f3e4',
+                            400: '#f5efdb',
+                            500: '#f2ebd2',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-cream-50 min-h-screen flex items-center justify-center py-12">
+    <div class="max-w-md w-full space-y-8">
+        <div class="bg-white p-8 rounded-lg shadow-md">
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center mb-4">
+                    <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-16 w-16 rounded-lg object-cover mr-3" />
+                    <h1 class="text-3xl font-bold text-brown-800">Rwanda Eats Reserve</h1>
+                </div>
+                <h2 class="text-2xl font-bold text-brown-700">Sign In</h2>
+                <p class="text-brown-600 mt-2">Access your account to manage reservations</p>
+            </div>
+            
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-brown-700 mb-2 font-medium" for="email">Email Address</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                
+                <div>
+                    <label class="block text-brown-700 mb-2 font-medium" for="password">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" class="h-4 w-4 text-brown-600 focus:ring-brown-500 border-brown-300 rounded">
+                        <label for="remember" class="ml-2 block text-sm text-brown-700">Remember me</label>
+                    </div>
+                    <a href="#" id="forgot-password" class="text-sm text-brown-600 hover:text-brown-800">Forgot password?</a>
+                </div>
+                
+                <button type="submit" class="w-full bg-brown-600 text-white py-3 rounded-lg hover:bg-brown-700 transition font-semibold">
+                    Sign In
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-brown-600">
+                        Don't have an account? 
+                        <a href="/register" class="text-brown-600 hover:text-brown-800 font-medium">Sign up</a>
+                    </p>
+                </div>
+            </form>
+            
+            <!-- Demo Credentials -->
+            <div class="mt-8 p-4 bg-brown-50 rounded-lg border border-brown-200">
+                <p class="text-sm text-brown-600 font-semibold mb-2">Demo Credentials:</p>
+                <p class="text-sm text-brown-600">Customer: john@example.com / customer123</p>
+                <p class="text-sm text-brown-600">Restaurant Admin: admin@millecollines.rw / restaurant123</p>
+                <p class="text-sm text-brown-600">System Admin: admin@rwandaeats.com / admin123</p>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <a href="/" class="text-brown-600 hover:text-brown-800">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Customer Site
+            </a>
+        </div>
+    </div>
+    
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-brown-800">Reset Password</h3>
+                <button id="close-forgot-password" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Step 1: Email Entry -->
+            <form id="forgot-password-form" class="step-1">
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="reset-email">Email Address</label>
+                    <input type="email" id="reset-email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancel-forgot-password" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        Send Verification Code
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Step 2: Verification Code -->
+            <form id="verify-code-form" class="step-2 hidden">
+                <div class="mb-4">
+                    <p class="text-brown-600 mb-3">Enter the 6-digit verification code sent to your email.</p>
+                    <label class="block text-brown-700 mb-2 font-medium" for="verification-code">Verification Code</label>
+                    <input type="text" id="verification-code" maxlength="6" pattern="[0-9]{6}" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500 text-center text-2xl tracking-widest" required placeholder="000000">
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="back-to-email" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800">
+                        Back
+                    </button>
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        Verify Code
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Step 3: New Password -->
+            <form id="reset-password-form" class="step-3 hidden">
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="new-password">New Password</label>
+                    <input type="password" id="new-password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required minlength="6">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required minlength="6">
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        Reset Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/js/splash.js"></script>
+    <script>
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = data.user.user_type === 'customer' ? '/' : '/admin';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred during login. Please try again.');
+            }
+        });
+        
+        // Forgot password functionality
+        let resetEmail = '';
+        let verificationCode = '';
+        
+        document.getElementById('forgot-password').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+            // Reset to step 1
+            document.querySelector('.step-1').classList.remove('hidden');
+            document.querySelector('.step-2').classList.add('hidden');
+            document.querySelector('.step-3').classList.add('hidden');
+        });
+        
+        document.getElementById('close-forgot-password').addEventListener('click', function() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+        });
+        
+        document.getElementById('cancel-forgot-password').addEventListener('click', function() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+        });
+        
+        // Step 1: Send verification code
+        document.getElementById('forgot-password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            resetEmail = document.getElementById('reset-email').value;
+            
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: resetEmail })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Verification code sent to your email!');
+                    // Move to step 2
+                    document.querySelector('.step-1').classList.add('hidden');
+                    document.querySelector('.step-2').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+        
+        // Back to email step
+        document.getElementById('back-to-email').addEventListener('click', function() {
+            document.querySelector('.step-2').classList.add('hidden');
+            document.querySelector('.step-1').classList.remove('hidden');
+        });
+        
+        // Step 2: Verify code
+        document.getElementById('verify-code-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            verificationCode = document.getElementById('verification-code').value;
+            
+            try {
+                const response = await fetch('/api/auth/verify-reset-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: resetEmail, 
+                        code: verificationCode 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Move to step 3
+                    document.querySelector('.step-2').classList.add('hidden');
+                    document.querySelector('.step-3').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+        
+        // Step 3: Reset password
+        document.getElementById('reset-password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: resetEmail,
+                        code: verificationCode,
+                        newPassword: newPassword 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Password reset successfully! You can now login.');
+                    document.getElementById('forgot-password-modal').classList.add('hidden');
+                    // Reset forms
+                    document.getElementById('forgot-password-form').reset();
+                    document.getElementById('verify-code-form').reset();
+                    document.getElementById('reset-password-form').reset();
+                    document.querySelector('.step-3').classList.add('hidden');
+                    document.querySelector('.step-1').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Reset password error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+        
+        // Close modal on outside click
+        window.addEventListener('click', function(e) {
+            if (e.target === document.getElementById('forgot-password-modal')) {
+                document.getElementById('forgot-password-modal').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

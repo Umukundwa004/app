@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Admin - Rwanda Eat Reserve</title>
+    
+    <!-- Temporary Tailwind for development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Add responsive meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-menu { display: block; }
+            .container { padding: 0.5rem; }
+        }
+    </style>
+</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Admin - Rwanda Eats Reserve</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brown: {
+                            50: '#fbf7f5',
+                            100: '#f3e9e6',
+                            200: '#e8d2c9',
+                            300: '#d6b4a6',
+                            400: '#b98b6f',
+                            500: '#a86f55',
+                            600: '#9b5f47',
+                            700: '#977669',
+                            800: '#846358',
+                            900: '#43302b',
+                        },
+                        cream: {
+                            50: '#fefefe',
+                            100: '#fdfbf6',
+                            200: '#fbf7ed',
+                            300: '#f8f3e4',
+                            400: '#f5efdb',
+                            500: '#f2ebd2',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-cream-50">
+    <!-- Header -->
+    <header class="bg-brown-800 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-12 w-12 rounded-lg object-cover mr-3" />
+                    <h1 class="text-2xl font-bold">Rwanda Eats Reserve - System Admin</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="admin-name" class="text-brown-200"></span>
+                    <button id="logout-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="border-b border-brown-200">
+                <nav class="flex -mb-px overflow-x-auto">
+                    <button id="dashboard-tab" class="tab-button py-4 px-6 text-center border-b-2 border-brown-600 font-medium text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                    </button>
+                    <button id="users-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-users mr-2"></i>User Management
+                    </button>
+                    <button id="restaurants-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-store mr-2"></i>Restaurant Management
+                    </button>
+                    <button id="reservations-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-calendar-alt mr-2"></i>All Reservations
+                    </button>
+                    <button id="system-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-cog mr-2"></i>System Settings
+                    </button>
+                    <button id="audit-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                        <i class="fas fa-shield-alt mr-2"></i>Audit Logs
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab Content -->
+        <div id="dashboard-content" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-brown-800">System Overview</h2>
+                
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="text-blue-600 text-xl md:text-2xl font-bold" id="total-users">0</div>
+                        <div class="text-blue-700 text-sm md:text-base">Total Users</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div class="text-green-600 text-xl md:text-2xl font-bold" id="total-restaurants">0</div>
+                        <div class="text-green-700 text-sm md:text-base">Restaurants</div>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div class="text-yellow-600 text-xl md:text-2xl font-bold" id="total-reservations">0</div>
+                        <div class="text-yellow-700 text-sm md:text-base">Reservations</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div class="text-purple-600 text-xl md:text-2xl font-bold" id="pending-reservations">0</div>
+                        <div class="text-purple-700 text-sm md:text-base">Pending</div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <div class="text-orange-600 text-xl md:text-2xl font-bold" id="total-menu-items">0</div>
+                        <div class="text-orange-700 text-sm md:text-base">Menu Items</div>
+                    </div>
+                    <div class="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                        <div class="text-teal-600 text-xl md:text-2xl font-bold" id="active-restaurants">0</div>
+                        <div class="text-teal-700 text-sm md:text-base">Active</div>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">User Distribution</h3>
+                        <div id="user-chart" class="h-64 flex items-center justify-center">
+                            <p class="text-brown-500">Chart will appear here</p>
+                        </div>
+                    </div>
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Reservation Trends</h3>
+                        <div id="reservation-chart" class="h-64 flex items-center justify-center">
+                            <p class="text-brown-500">Chart will appear here</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Recent Users</h3>
+                        <div id="recent-users" class="space-y-3">
+                            <!-- Recent users will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Recent Reservations</h3>
+                        <div id="system-alerts" class="space-y-3">
+                            <!-- System alerts will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab Content -->
+        <div id="users-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-brown-800">User Management</h2>
+                    <button id="add-user-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Add User
+                    </button>
+                </div>
+                
+                <!-- User Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">User Type</label>
+                        <select id="user-type-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Users</option>
+
+        <!-- Restaurant Details Modal (read-only) -->
+        <div id="restaurant-details-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="restaurant-details-title" class="text-2xl font-bold text-brown-800">Restaurant Details</h2>
+                    <button id="close-restaurant-details" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="restaurant-details-body" class="space-y-3 text-brown-800">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="mt-6 text-right">
+                    <button id="close-restaurant-details-2" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Close</button>
+                </div>
+            </div>
+        </div>
+                            <option value="customer">Customers</option>
+                            <option value="restaurant_admin">Restaurant Admins</option>
+                            <option value="system_admin">System Admins</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
+                        <select id="user-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="locked">Locked</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="search-users-btn" class="w-full bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                            Search Users
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Users Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-brown-100">
+                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Name</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Email</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Phone</th>
+                                <th class="py-3 px-4 text-left text-brown-800">User Type</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Joined</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restaurants Tab Content -->
+        <div id="restaurants-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-brown-800">Restaurant Management</h2>
+                    <button id="add-restaurant-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Add Restaurant
+                    </button>
+                </div>
+                
+                <!-- Restaurant Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
+                        <select id="restaurant-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Restaurants</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Cuisine</label>
+                        <select id="restaurant-cuisine-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Cuisines</option>
+                            <!-- Cuisine options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="search-restaurants-btn" class="w-full bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                            Search Restaurants
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Restaurants Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-brown-100">
+                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Image</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Name</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Location</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Cuisine</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Admin</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="restaurants-table">
+                            <!-- Restaurants will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservations Tab Content -->
+        <div id="reservations-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-brown-800">All Reservations</h2>
+                
+                <!-- Reservation Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
+                        <select id="reservation-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Restaurant</label>
+                        <select id="reservation-restaurant-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <option value="all">All Restaurants</option>
+                            <!-- Restaurants will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-brown-700 mb-2 font-medium">Date Range</label>
+                        <input type="date" id="reservation-date-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="search-reservations-btn" class="w-full bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                            Search
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Reservations Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-brown-100">
+                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Customer</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Restaurant</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Date & Time</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Party Size</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
+                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-reservations-table">
+                            <!-- Reservations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings Tab Content -->
+        <div id="system-content" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-brown-800">System Settings</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- General Settings -->
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">General Settings</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-brown-700 mb-2 font-medium">System Name</label>
+                                <input type="text" value="Rwanda Eats Reserve" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            </div>
+                            <div>
+                                <label class="block text-brown-700 mb-2 font-medium">Default Reservation Timeout (minutes)</label>
+                                <input type="number" value="30" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            </div>
+                            <div>
+                                <label class="block text-brown-700 mb-2 font-medium">Max Party Size</label>
+                                <input type="number" value="20" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification Settings -->
+                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
+                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Notification Settings</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-brown-700">Email Notifications</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-brown-700">SMS Notifications</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-brown-700">Reservation Reminders</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <button class="bg-brown-600 text-white px-6 py-3 rounded-lg hover:bg-brown-700 transition">
+                        <i class="fas fa-save mr-2"></i>Save Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Logs Tab Content -->
+        <div id="audit-content" class="tab-content hidden p-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-brown-800">Audit Logs</h2>
+                    <div class="flex space-x-3">
+                        <select id="audit-action-filter" class="px-3 py-2 border border-brown-300 rounded-lg focus:outline-none">
+                            <option value="all">All Actions</option>
+                            <option value="USER_CREATED">User Created</option>
+                            <option value="USER_UPDATED">User Updated</option>
+                            <option value="RESTAURANT_CREATED">Restaurant Created</option>
+                            <option value="RESTAURANT_DELETED">Restaurant Deleted</option>
+                            <option value="RESERVATION_CREATED">Reservation Created</option>
+                        </select>
+                        <select id="audit-user-filter" class="px-3 py-2 border border-brown-300 rounded-lg focus:outline-none">
+                            <option value="all">All Users</option>
+                        </select>
+                        <input id="audit-date-filter" type="date" class="px-3 py-2 border border-brown-300 rounded-lg" />
+                        <button id="search-audit-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Search</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-logs-table" class="bg-white divide-y divide-gray-200">
+                            <!-- audit logs rows populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Add/Edit Restaurant Modal (updated IDs to match JS expectations) -->
+    <div id="restaurant-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="restaurant-modal-title" class="text-2xl font-bold text-brown-800">Add Restaurant</h2>
+                <button id="close-restaurant-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="restaurant-form">
+                <input type="hidden" id="restaurant-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="restaurant-name" class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" id="restaurant-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" required>
+                    </div>
+                    <div>
+                        <label for="restaurant-location" class="block text-sm font-medium text-gray-700">Location / Address</label>
+                        <input type="text" id="restaurant-location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="restaurant-description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="restaurant-description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Menu</label>
+                        <div class="mt-1 text-sm text-brown-700">
+                            <label class="inline-flex items-center mr-4">
+                                <input type="radio" name="menu-source" value="editor" checked class="form-radio">
+                                <span class="ml-2">Edit menu in system</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="menu-source" value="file" class="form-radio">
+                                <span class="ml-2">Upload PDF menu</span>
+                            </label>
+                        </div>
+                        <div id="menu-editor" class="mt-2">
+                            <textarea id="restaurant-menu" rows="4" placeholder="e.g. Spaghetti - $8\nGrilled Chicken - $10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"></textarea>
+                        </div>
+                        <div id="menu-file" class="mt-2 hidden">
+                            <input type="file" id="restaurant-menu-file" accept="application/pdf" class="block w-full">
+                            <p class="text-xs text-brown-500 mt-1">Upload a PDF file for the menu (optional).</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="restaurant-phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                        <input type="tel" id="restaurant-phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div>
+                        <label for="restaurant-email" class="block text-sm font-medium text-gray-700">Contact Email</label>
+                        <input type="email" id="restaurant-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div>
+                        <label for="restaurant-opening" class="block text-sm font-medium text-gray-700">Opening Time</label>
+                        <input type="time" id="restaurant-opening" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div>
+                        <label for="restaurant-closing" class="block text-sm font-medium text-gray-700">Closing Time</label>
+                        <input type="time" id="restaurant-closing" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+
+                    <div>
+                        <label for="restaurant-cuisine" class="block text-sm font-medium text-gray-700">Cuisine Type</label>
+                        <input type="text" id="restaurant-cuisine" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="e.g., Rwandan, Italian">
+                    </div>
+                    <div>
+                        <label for="restaurant-price" class="block text-sm font-medium text-gray-700">Price Range</label>
+                        <select id="restaurant-price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                            <option value="1">$ (Budget)</option>
+                            <option value="2" selected>$$ (Moderate)</option>
+                            <option value="3">$$$ (Expensive)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="restaurant-tables" class="block text-sm font-medium text-gray-700">Number of Tables</label>
+                        <input type="number" id="restaurant-tables" min="1" value="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Restaurant Admin</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center space-x-4 mb-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="admin-option" value="existing" checked class="form-radio text-brown-600">
+                                    <span class="ml-2 text-sm">Use existing admin</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="admin-option" value="create" class="form-radio text-brown-600">
+                                    <span class="ml-2 text-sm">Create new admin</span>
+                                </label>
+                            </div>
+
+                            <div id="existing-admin-section" class="mb-4">
+                                <label for="restaurant-admin-select" class="block text-sm font-medium text-gray-700">Select Admin (optional)</label>
+                                <select id="restaurant-admin-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                                    <option value="">Select Admin (Optional)</option>
+                                </select>
+                            </div>
+
+                            <!-- New Admin fields (hidden by default) - required when creating an admin -->
+                            <div id="new-admin-section" class="mb-4 hidden">
+                                <label for="new-admin-name" class="block text-sm font-medium text-gray-700">Admin Name</label>
+                                <input type="text" id="new-admin-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="Full name of new admin">
+
+                                <label for="new-admin-email" class="block text-sm font-medium text-gray-700 mt-3">Admin Email</label>
+                                <input type="email" id="new-admin-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="admin@example.com">
+                            </div>
+
+                    <div>
+                        <label for="restaurant-opening" class="block text-sm font-medium text-gray-700">Opening Time</label>
+                        <input type="time" id="restaurant-opening" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div>
+                        <label for="restaurant-closing" class="block text-sm font-medium text-gray-700">Closing Time</label>
+                        <input type="time" id="restaurant-closing" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Operating Hours</label>
+                        <div id="operating-hours" class="mt-2 grid gap-2 text-sm text-brown-700">
+                            <!-- Repeat for each day -->
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Monday</div>
+                                <input type="time" id="hours-monday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-monday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-monday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Tuesday</div>
+                                <input type="time" id="hours-tuesday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-tuesday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-tuesday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Wednesday</div>
+                                <input type="time" id="hours-wednesday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-wednesday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-wednesday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Thursday</div>
+                                <input type="time" id="hours-thursday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-thursday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-thursday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Friday</div>
+                                <input type="time" id="hours-friday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-friday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-friday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Saturday</div>
+                                <input type="time" id="hours-saturday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-saturday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-saturday-closed" /> Closed</label>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20">Sunday</div>
+                                <input type="time" id="hours-sunday-open" class="block rounded-md border-gray-300" />
+                                <span>-</span>
+                                <input type="time" id="hours-sunday-close" class="block rounded-md border-gray-300" />
+                                <label class="ml-3 text-xs"><input type="checkbox" id="hours-sunday-closed" /> Closed</label>
+                            </div>
+                        </div>
+                    </div>
+                                </div>
+                                <div>
+                                    <label for="new-admin-login-email" class="block text-sm font-medium text-gray-700">Admin Login Email (same as Admin Email by default)</label>
+                                    <input type="email" id="new-admin-login-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="Optional - will default to Admin Email if left blank">
+                                </div>
+                                <div>
+                                    <label for="new-admin-phone" class="block text-sm font-medium text-gray-700">Admin Phone</label>
+                                    <input type="tel" id="new-admin-phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                                </div>
+                                <div>
+                                    <label for="new-admin-password" class="block text-sm font-medium text-gray-700">Initial Password</label>
+                                    <input type="password" id="new-admin-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <div id="restaurant-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-brown-800" id="restaurant-modal-title">Add Restaurant</h3>
+                <button id="close-restaurant-modal" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="restaurant-form">
+                <input type="hidden" id="restaurant-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Restaurant Name</label>
+                        <input type="text" id="restaurant-name" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Location</label>
+                        <input type="text" id="restaurant-location" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Contact Phone</label>
+                        <input type="tel" id="restaurant-phone" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Contact Email</label>
+                        <input type="email" id="restaurant-email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Opening Time</label>
+                        <input type="time" id="restaurant-opening" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Closing Time</label>
+                        <input type="time" id="restaurant-closing" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Cuisine Type</label>
+                        <input type="text" id="restaurant-cuisine" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Price Range</label>
+                        <select id="restaurant-price" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                            <option value="1">$ - Budget</option>
+                            <option value="2">$$ - Moderate</option>
+                            <option value="3">$$$ - Expensive</option>
+                        </select>
+                    </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label class="block text-brown-700 mb-2 font-medium">Description</label>
+                        <textarea id="restaurant-description" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Total Tables</label>
+                        <input type="number" id="restaurant-tables" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" min="1" required>
+                    </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label class="block text-brown-700 mb-2 font-medium">Restaurant Images</label>
+                        <input type="file" id="restaurant-images" accept="image/*" multiple class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <p class="text-brown-500 text-xs mt-1">Upload multiple photos of your restaurant (JPG, PNG, GIF). First image will be primary.</p>
+                        
+                        <!-- Existing Images Gallery -->
+                        <div id="existing-images-gallery" class="mt-3 hidden">
+                            <h4 class="text-sm font-semibold text-brown-700 mb-2">Current Images</h4>
+                            <div id="existing-images-container" class="grid grid-cols-3 md:grid-cols-4 gap-2">
+                                <!-- Existing images will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <!-- New Images Preview -->
+                        <div id="new-images-preview" class="mt-3 hidden">
+                            <h4 class="text-sm font-semibold text-brown-700 mb-2">New Images to Upload</h4>
+                            <div id="new-images-container" class="grid grid-cols-3 md:grid-cols-4 gap-2">
+                                <!-- New image previews will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-brown-700 mb-2 font-medium">Restaurant Video</label>
+                        <input type="file" id="restaurant-video" accept="video/*" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <p class="text-brown-500 text-xs mt-1">Upload a video tour (MP4, WebM, max 50MB)</p>
+                        <div id="video-preview" class="mt-2 hidden">
+                            <video id="preview-video" class="h-32 w-full object-cover rounded-lg" controls></video>
+                            <button type="button" id="remove-video" class="text-red-600 text-xs mt-1 hover:underline">Remove video</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button type="button" id="cancel-restaurant" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800 border border-brown-300 rounded-lg">
+                        Cancel
+                    </button>
+                   
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+                    <!-- Media uploads -->
+                    <div class="md:col-span-2">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Media</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg space-y-4">
+                            <div>
+                                <label for="restaurant-images" class="block text-sm font-medium text-gray-700">Images (multiple)</label>
+                                <input type="file" id="restaurant-images" accept="image/*" multiple class="mt-1 block w-full">
+                                <div id="images-preview" class="hidden mt-3">
+                                    <div id="preview-images-container" class="grid grid-cols-3 gap-2"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="restaurant-video" class="block text-sm font-medium text-gray-700">Promo Video (optional)</label>
+                                <input type="file" id="restaurant-video" accept="video/*" class="mt-1 block w-full">
+                                <div id="video-preview" class="hidden mt-3">
+                                    <video id="preview-video" controls class="w-full h-48 object-cover rounded-lg"></video>
+                                    <button type="button" id="remove-video" class="mt-2 text-sm text-red-600">Remove Video</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end space-x-4">
+                    <button type="submit" id="save-restaurant-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Save Restaurant</button>
+                </div>
+                <div id="restaurant-form-feedback" class="text-sm mt-2 text-red-600"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="user-modal-title" class="text-2xl font-bold text-brown-800">Add User</h2>
+                <button id="close-user-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="space-y-4">
+                    <div>
+                        <label for="user-name" class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" id="user-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" required>
+                    </div>
+                    <div>
+                        <label for="user-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="user-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" required>
+                    </div>
+                    <div>
+                        <label for="user-phone" class="block text-sm font-medium text-gray-700">Phone</label>
+                        <input type="tel" id="user-phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                    <div>
+                        <label for="user-type" class="block text-sm font-medium text-gray-700">User Type</label>
+                        <select id="user-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                            <option value="customer">Customer</option>
+                            <option value="restaurant_admin">Restaurant Admin</option>
+                            <option value="system_admin">System Admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="user-password" class="block text-sm font-medium text-gray-700">Password (leave blank to keep unchanged)</label>
+                        <input type="password" id="user-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end space-x-4">
+                    <button type="button" id="cancel-user" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+                    <button type="submit" id="save-user-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Save User</button>
+                </div>
+                <div id="user-form-feedback" class="text-sm mt-2 text-red-600"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/system-admin.js"></script>
+</body>
+</html>

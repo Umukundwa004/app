@@ -1,0 +1,515 @@
+/* Global responsive enhancements for admin page */
+
+.admin-page main { 
+  /* Ensure content doesn't hide behind bottom nav on small screens */
+  padding-bottom: 7rem; /* overridden in HTML for now; acts as fallback */
+}
+
+/* Bottom nav active state */
+.mobile-admin-nav-link.active { 
+  font-weight: 600;
+  color: #a18072; /* brown-600 */
+}
+
+.mobile-admin-nav-link {
+  transition: all 0.2s ease;
+  min-width: 50px;
+}
+
+.mobile-admin-nav-link:active {
+  transform: scale(0.95);
+}
+
+#mobile-admin-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}
+
+/* Reservations page responsive */
+@media (max-width: 768px) {
+  /* Filters stack vertically */
+  #reservations-content .flex.space-x-2 {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  #reservations-content select {
+    width: 100%;
+  }
+  
+  /* Table becomes card layout */
+  #reservations-content table {
+    display: none;
+  }
+  
+  /* Show cards instead */
+  #reservations-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  /* Action buttons stack */
+  .reservation-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .reservation-actions button {
+    width: 100%;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* Small screen adjustments */
+@media (max-width: 640px) {
+  /* Hide desktop header completely, show mobile header */
+  header.md\:hidden {
+    display: block;
+  }
+  header.hidden.md\:block {
+    display: none;
+  }
+  
+  /* Main content padding */
+  main.container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 1rem;
+  }
+  
+  /* Reservations page mobile optimization */
+  #reservations-content .bg-white {
+    padding: 0.75rem !important;
+  }
+  
+  #reservations-content h2 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  #reservations-content select {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.6rem;
+  }
+  
+  /* Mobile reservation cards styling */
+  #reservations-cards-mobile {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+  }
+  
+  #reservations-cards-mobile > div {
+    animation: slideIn 0.3s ease;
+  }
+  
+  /* Menu management mobile optimization */
+  #menu-content .bg-white {
+    padding: 0.75rem !important;
+  }
+  
+  #menu-content h2 {
+    font-size: 1.1rem !important;
+  }
+  
+  #menu-items-container {
+    gap: 0.75rem !important;
+  }
+  
+  #menu-items-container > div {
+    animation: slideIn 0.3s ease;
+  }
+  
+  /* Menu item cards on mobile - single column */
+  #menu-items-container {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Line clamp utility */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 2;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Stats grid - 2 columns */
+  #dashboard-content .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 { 
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  /* Stat cards */
+  .bg-yellow-50, .bg-green-50, .bg-blue-50, .bg-purple-50 {
+    padding: 0.75rem;
+  }
+  .bg-yellow-50 .text-2xl, .bg-green-50 .text-2xl, 
+  .bg-blue-50 .text-2xl, .bg-purple-50 .text-2xl {
+    font-size: 1.25rem;
+  }
+  .bg-yellow-50 div, .bg-green-50 div, 
+  .bg-blue-50 div, .bg-purple-50 div {
+    font-size: 0.75rem;
+  }
+  
+  /* Section headers */
+  h2.text-2xl {
+    font-size: 1.25rem;
+  }
+  h3.text-lg {
+    font-size: 0.95rem;
+  }
+  
+  /* Quick actions buttons */
+  .quick-action { 
+    font-size: 0.8rem; 
+    padding: 0.5rem 0.65rem; 
+  }
+  .quick-action i { 
+    margin-right: 0.35rem; 
+    font-size: 0.85rem;
+  }
+  
+  /* Buttons */
+  button, .bg-brown-600 {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Forms and inputs */
+  input, select, textarea {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.65rem;
+  }
+  label {
+    font-size: 0.8rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  /* Tables */
+  table.min-w-full { 
+    font-size: 0.7rem; 
+  }
+  table.min-w-full th, table.min-w-full td { 
+    padding: 0.4rem 0.3rem; 
+  }
+  
+  /* Cards and containers */
+  .bg-white.rounded-lg.shadow-md {
+    padding: 0.75rem;
+  }
+  .bg-brown-50.p-6 {
+    padding: 0.75rem;
+  }
+  
+  /* Modals */
+  #restaurant-modal .bg-white,
+  #menu-item-modal .bg-white,
+  #reservation-details-modal .bg-white {
+    padding: 1rem;
+  }
+  
+  /* Grid gaps */
+  .gap-6 {
+    gap: 0.75rem;
+  }
+  .gap-4 {
+    gap: 0.5rem;
+  }
+  .space-y-3 > * + * {
+    margin-top: 0.5rem;
+  }
+  .space-y-4 > * + * {
+    margin-top: 0.65rem;
+  }
+  
+  /* Restaurant/Menu cards */
+  .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 400px) {
+  /* Extra small screens - even more compact */
+  header .flex.items-center.space-x-4 { 
+    flex-direction: column; 
+    align-items: flex-end; 
+    gap: 0.25rem; 
+  }
+  #logout-btn { 
+    padding: 0.35rem 0.6rem; 
+    font-size: 0.7rem; 
+  }
+  #admin-name {
+    font-size: 0.7rem;
+  }
+  header h1 {
+    font-size: 0.8rem;
+  }
+  main.container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  /* Single column for stats */
+  #dashboard-content .grid.grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 { 
+    grid-template-columns: 1fr;
+  }
+  h2.text-2xl {
+    font-size: 1.1rem;
+  }
+  button, .bg-brown-600 {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+/* Improve tap targets for mobile */
+@media (hover: none) {
+  .quick-action, .tab-button, .mobile-admin-nav-link { 
+    min-height: 44px; 
+  }
+}
+
+/* Hide desktop tab bar on small screens to rely on bottom nav */
+@media (max-width: 768px) {
+  #desktop-tabs { 
+    display: none !important; 
+  }
+}
+
+/* Ensure modals are scroll-friendly on mobile */
+#restaurant-modal .max-h\[90vh\],
+#menu-item-modal .max-h\[90vh\],
+#reservation-details-modal .max-h\[90vh\] { 
+  overscroll-behavior: contain; 
+}
+
+/* Menu Management Mobile Enhancements */
+@media (max-width: 640px) {
+  #menu-content {
+    padding: 0.75rem !important;
+  }
+  
+  #menu-items-container {
+    gap: 0.75rem !important;
+  }
+  
+  #menu-items-container > div {
+    padding: 0.75rem !important;
+  }
+  
+  /* Make sure menu item cards are touch-friendly */
+  .edit-menu-item-btn,
+  .delete-menu-item-btn {
+    min-height: 38px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Menu modal responsive improvements */
+@media (max-width: 640px) {
+  #menu-item-modal form input,
+  #menu-item-modal form textarea,
+  #menu-item-modal form select {
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+  
+  #menu-item-modal .space-y-3 {
+    gap: 0.75rem;
+  }
+}
+
+/* Improve menu restaurant selector on mobile */
+@media (max-width: 640px) {
+  #menu-restaurant-select {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  #add-menu-item-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
+
+/* Bottom navigation improvements */
+.mobile-admin-nav-link i {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 360px) {
+  .mobile-admin-nav-link span {
+    font-size: 0.6rem;
+  }
+  
+  .mobile-admin-nav-link i {
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+  }
+}
+
+/* Customer page - Restaurant grid responsive */
+@media (max-width: 640px) {
+  #featured-restaurants,
+  #all-restaurants {
+    gap: 0.75rem !important;
+  }
+
+  /* Ensure 2 columns on small screens */
+  #featured-restaurants > div,
+  #all-restaurants > div {
+    min-width: 0; /* Prevent flex overflow */
+  }
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 1;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 2;
+}
+
+/* System Admin — Restaurant modal polish */
+#restaurant-modal .bg-white {
+  max-width: 900px;
+  width: 100%;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(28, 14, 10, 0.12);
+}
+
+#restaurant-modal .flex.justify-between.items-center {
+  align-items: center;
+}
+
+#restaurant-modal h2 {
+  font-size: 1.375rem; /* 22px */
+  color: #4b2f26; /* dark brown */
+}
+
+#restaurant-modal form .grid { 
+  gap: 1rem;
+}
+
+#restaurant-modal label {
+  font-weight: 600;
+  color: #4b2f26;
+}
+
+#restaurant-modal input[type="text"],
+#restaurant-modal input[type="email"],
+#restaurant-modal input[type="tel"],
+#restaurant-modal input[type="time"],
+#restaurant-modal input[type="number"],
+#restaurant-modal select,
+#restaurant-modal textarea,
+#restaurant-modal input[type="file"] {
+  border: 1px solid #e9dfd9;
+  padding: 0.6rem 0.65rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+#restaurant-modal input:focus,
+#restaurant-modal textarea:focus,
+#restaurant-modal select:focus {
+  outline: none;
+  border-color: #b98b6f; /* brown-400 */
+  box-shadow: 0 0 0 4px rgba(185,139,111,0.06);
+}
+
+/* Operating hours layout — align times and labels neatly */
+#restaurant-modal #operating-hours {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+#restaurant-modal #operating-hours .flex.items-center {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#restaurant-modal #operating-hours input[type="time"] {
+  padding: 0.4rem 0.45rem;
+}
+
+/* Image previews */
+#restaurant-modal #preview-images-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+#restaurant-modal #preview-images-container img {
+  width: 100%;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+#restaurant-modal #video-preview video {
+  width: 100%;
+  height: 160px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Admin section grouping */
+#restaurant-modal .bg-gray-50.p-4 {
+  border: 1px solid #f0e6e2;
+  border-radius: 8px;
+}
+
+#restaurant-modal #existing-admin-section,
+#restaurant-modal #new-admin-section {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+/* Menu editor toggle */
+#restaurant-modal #menu-editor,
+#restaurant-modal #menu-file {
+  transition: opacity 0.18s ease, max-height 0.18s ease;
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  #restaurant-modal #preview-images-container { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  #restaurant-modal .bg-white { padding: 1rem; }
+  #restaurant-modal #preview-images-container { grid-template-columns: repeat(2, 1fr); }
+  #restaurant-modal #operating-hours .flex.items-center { grid-template-columns: 90px 1fr; }
+}
+

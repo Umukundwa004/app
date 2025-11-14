@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rwanda Eats Reserve - Find & Book Restaurants</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brown: {
+                            50: '#fdf8f6',
+                            100: '#f2e8e5',
+                            200: '#eaddd7',
+                            300: '#e0cec7',
+                            400: '#d2bab0',
+                            500: '#bfa094',
+                            600: '#a18072',
+                            700: '#977669',
+                            800: '#846358',
+                            900: '#43302b',
+                        },
+                        cream: {
+                            50: '#fefefe',
+                            100: '#fdfbf6',
+                            200: '#fbf7ed',
+                            300: '#f8f3e4',
+                            400: '#f5efdb',
+                            500: '#f2ebd2',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-cream-50 overflow-x-hidden">
+    <!-- Desktop Navigation Bar (visible on md and up) -->
+    <nav class="hidden md:flex fixed top-0 left-0 right-0 bg-white border-b border-brown-200 shadow-lg z-40">
+        <div class="container mx-auto flex justify-between items-center px-6 py-3">
+            <div class="flex items-center gap-2">
+                <img src="/views/images/logo.jpeg" alt="Logo" class="h-8 w-8 rounded-lg object-cover" />
+                <span class="font-bold text-brown-800 text-lg">Rwanda Eats Reserve</span>
+            </div>
+            <div class="flex gap-8">
+                <a href="#home" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="home"><i class="fas fa-home mr-2"></i>Home</a>
+                <a href="#restaurants" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="restaurants"><i class="fas fa-search mr-2"></i>Discover</a>
+                <a href="#reservations" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="reservations"><i class="fas fa-calendar-alt mr-2"></i>Bookings</a>
+                <a href="#profile" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="profile"><i class="fas fa-user mr-2"></i>Profile</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="notifications-btn-desktop" class="text-brown-400 hover:text-brown-700 transition relative">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span id="notification-badge-desktop" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center hidden">0</span>
+                </button>
+                <a id="auth-link-desktop" href="/login" class="text-brown-400 hover:text-brown-700 transition">
+                    <i id="auth-link-icon-desktop" class="fas fa-sign-in-alt text-lg"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <!-- Simple Mobile Header -->
+    <header class="bg-brown-800 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-3 md:px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-8 w-8 md:h-10 md:w-10 rounded-lg object-cover mr-2 md:mr-3" />
+                    <h1 class="text-base md:text-lg font-bold">Rwanda Eats Reserve</h1>
+                </div>
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <button id="notifications-btn" class="text-brown-200 hover:text-white transition relative">
+                        <i class="fas fa-bell text-base md:text-lg"></i>
+                        <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center hidden">0</span>
+                    </button>
+                    <a id="auth-link" href="/login" class="text-brown-200 hover:text-white transition">
+                        <i id="auth-link-icon" class="fas fa-sign-in-alt text-base md:text-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Sections -->
+    <main class="pb-20 md:pb-0">
+        <!-- Home Section -->
+        <section id="home-section" class="section active">
+            <!-- Hero Section -->
+            <div class="bg-brown-900 text-white py-12 md:py-16">
+                <div class="container mx-auto px-4 text-center">
+                    <h2 class="text-2xl md:text-4xl font-bold mb-3 md:mb-4">Discover & Reserve Restaurants in Rwanda</h2>
+                    <p class="text-base md:text-xl mb-6 md:mb-8">Book your table online quickly and easily - no phone calls needed</p>
+                    
+                    <!-- Search Bar -->
+                    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-2">
+                        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+                            <input type="text" id="search-input" placeholder="Search restaurants by name or cuisine..." class="flex-grow px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-800 rounded-lg border border-brown-200 focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <input type="text" id="location-input" placeholder="Location, area, or city..." class="flex-grow px-3 md:px-4 py-2 md:py-3 text-sm md:text-base text-gray-800 rounded-lg border border-brown-200 focus:outline-none focus:ring-2 focus:ring-brown-500">
+                            <button id="search-btn" class="bg-brown-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg text-sm md:text-base font-semibold hover:bg-brown-700 transition">
+                                <i class="fas fa-search mr-1 md:mr-2"></i>Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Restaurants -->
+            <div class="py-8 md:py-12">
+                <div class="container mx-auto px-3 md:px-4">
+                    <h2 class="text-2xl md:text-3xl font-bold text-center mb-2 text-brown-800">Featured Restaurants</h2>
+                    <p class="text-center text-sm md:text-base text-brown-600 mb-6 md:mb-8">Discover the best dining experiences across Rwanda</p>
+                    <div id="featured-restaurants" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+                        <!-- Featured restaurants will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works -->
+            <div class="bg-brown-50 py-8 md:py-12">
+                <div class="container mx-auto px-3 md:px-4">
+                    <h2 class="text-2xl md:text-3xl font-bold text-center mb-8 md:mb-12 text-brown-800">How It Works</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                        <div class="text-center">
+                            <div class="bg-brown-100 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                <i class="fas fa-search text-xl md:text-2xl text-brown-600"></i>
+                            </div>
+                            <h3 class="text-lg md:text-xl font-semibold mb-2 text-brown-800">1. Discover Restaurants</h3>
+                            <p class="text-sm md:text-base text-brown-600 px-2">Browse through our curated list of restaurants or search by location and cuisine</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-brown-100 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                <i class="fas fa-calendar-check text-xl md:text-2xl text-brown-600"></i>
+                            </div>
+                            <h3 class="text-lg md:text-xl font-semibold mb-2 text-brown-800">2. Book Your Table</h3>
+                            <p class="text-sm md:text-base text-brown-600 px-2">Select your preferred date, time, and party size to make a reservation</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="bg-brown-100 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                <i class="fas fa-utensils text-xl md:text-2xl text-brown-600"></i>
+                            </div>
+                            <h3 class="text-lg md:text-xl font-semibold mb-2 text-brown-800">3. Enjoy Your Meal</h3>
+                            <p class="text-sm md:text-base text-brown-600 px-2">Arrive at the restaurant and enjoy your dining experience</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Restaurant Discovery Section -->
+        <section id="restaurants-section" class="section hidden">
+            <div class="py-8 md:py-12">
+                <div class="container mx-auto px-3 md:px-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8">
+                        <div class="mb-4 md:mb-0">
+                            <h2 class="text-2xl md:text-3xl font-bold text-brown-800">Discover Restaurants</h2>
+                            <p class="text-sm md:text-base text-brown-600 mt-1 md:mt-2">Find the perfect dining spot for any occasion</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 md:space-x-4 w-full md:w-auto">
+                            <select id="cuisine-filter" class="px-3 md:px-4 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                                <option value="">All Cuisines</option>
+                                <option value="rwandan">Rwandan</option>
+                                <option value="international">International</option>
+                                <option value="seafood">Seafood</option>
+                                <option value="fusion">Fusion</option>
+                            </select>
+                            <select id="price-filter" class="px-3 md:px-4 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                                <option value="">All Price Ranges</option>
+                                <option value="1">$ - Budget</option>
+                                <option value="2">$$ - Moderate</option>
+                                <option value="3">$$$ - Expensive</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="all-restaurants" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
+                        <!-- All restaurants will be loaded here -->
+                    </div>
+                    
+                    <!-- Load More Button -->
+                    <div class="text-center mt-8 md:mt-12">
+                        <button id="load-more-btn" class="bg-brown-600 text-white px-4 md:px-6 py-2 md:py-3 text-sm md:text-base rounded-lg hover:bg-brown-700 transition hidden">
+                            <i class="fas fa-plus mr-1 md:mr-2"></i>Load More Restaurants
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Reservations Section -->
+        <section id="reservations-section" class="section hidden">
+            <div class="py-8 md:py-12">
+                <div class="container mx-auto px-3 md:px-4">
+                    <h2 class="text-2xl md:text-3xl font-bold text-center mb-2 text-brown-800">My Reservations</h2>
+                    <p class="text-center text-sm md:text-base text-brown-600 mb-6 md:mb-8">Manage your upcoming and past reservations</p>
+                    
+                    <!-- Reservation Tabs -->
+                    <div class="bg-white rounded-lg shadow-md mb-6 overflow-x-auto">
+                        <div class="border-b border-brown-200">
+                            <nav class="flex -mb-px min-w-max">
+                                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-brown-600 font-medium text-brown-600 whitespace-nowrap" data-tab="upcoming">
+                                    <i class="fas fa-clock mr-1 md:mr-2"></i>Upcoming
+                                </button>
+                                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap" data-tab="past">
+                                    <i class="fas fa-history mr-1 md:mr-2"></i>Past Reservations
+                                </button>
+                                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap" data-tab="cancelled">
+                                    <i class="fas fa-times-circle mr-1 md:mr-2"></i>Cancelled
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+                    
+                    <!-- Reservations Content -->
+                    <div id="upcoming-reservations" class="reservation-tab-content">
+                        <!-- Upcoming reservations will be loaded here -->
+                    </div>
+                    
+                    <div id="past-reservations" class="reservation-tab-content hidden">
+                        <!-- Past reservations will be loaded here -->
+                    </div>
+                    
+                    <div id="cancelled-reservations" class="reservation-tab-content hidden">
+                        <!-- Cancelled reservations will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="section hidden">
+            <div class="py-8 md:py-12">
+                <div class="container mx-auto px-3 md:px-4 max-w-4xl">
+                    <h2 class="text-2xl md:text-3xl font-bold text-center mb-2 text-brown-800">My Profile</h2>
+                    <p class="text-center text-sm md:text-base text-brown-600 mb-6 md:mb-8">Manage your personal information and preferences</p>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
+                        <!-- Profile Information -->
+                        <div id="profile-info" class="mb-6 md:mb-8">
+                            <h3 class="text-lg md:text-xl font-semibold mb-4 text-brown-800 border-b border-brown-200 pb-2">Personal Information</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div>
+                                    <label class="block text-brown-700 mb-2 text-sm md:text-base font-medium">Full Name</label>
+                                    <p id="profile-name" class="text-brown-600">Loading...</p>
+                                </div>
+                                <div>
+                                    <label class="block text-brown-700 mb-2 font-medium">Email Address</label>
+                                    <p id="profile-email" class="text-brown-600">Loading...</p>
+                                </div>
+                                <div>
+                                    <label class="block text-brown-700 mb-2 font-medium">Phone Number</label>
+                                    <p id="profile-phone" class="text-brown-600">Loading...</p>
+                                </div>
+                                <div>
+                                    <label class="block text-brown-700 mb-2 font-medium">Member Since</label>
+                                    <p id="profile-joined" class="text-brown-600">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="mt-6">
+                                <button id="edit-profile-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                                    <i class="fas fa-edit mr-2"></i>Edit Profile
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Profile Form -->
+                        <div id="edit-profile-form" class="hidden">
+                            <h3 class="text-xl font-semibold mb-4 text-brown-800 border-b border-brown-200 pb-2">Edit Profile Information</h3>
+                            <form id="profile-form" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-brown-700 mb-2 font-medium" for="edit-name">Full Name</label>
+                                        <input type="text" id="edit-name" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-brown-700 mb-2 font-medium" for="edit-email">Email Address</label>
+                                        <input type="email" id="edit-email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-brown-700 mb-2 font-medium" for="edit-phone">Phone Number</label>
+                                        <input type="tel" id="edit-phone" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end space-x-4">
+                                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-brown-600 hover:text-brown-800 border border-brown-300 rounded-lg">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Statistics -->
+                        <div class="mt-8 pt-8 border-t border-brown-200">
+                            <h3 class="text-xl font-semibold mb-4 text-brown-800">Your Dining Statistics</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-brown-50 p-4 rounded-lg text-center">
+                                    <div class="text-2xl font-bold text-brown-600" id="total-reservations-count">0</div>
+                                    <div class="text-brown-500">Total Reservations</div>
+                                </div>
+                                <div class="bg-brown-50 p-4 rounded-lg text-center">
+                                    <div class="text-2xl font-bold text-brown-600" id="upcoming-reservations-count">0</div>
+                                    <div class="text-brown-500">Upcoming</div>
+                                </div>
+                                <div class="bg-brown-50 p-4 rounded-lg text-center">
+                                    <div class="text-2xl font-bold text-brown-600" id="favorite-restaurants-count">0</div>
+                                    <div class="text-brown-500">Restaurants Visited</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Reservation Modal -->
+    <!-- Restaurant Details Modal -->
+    <!-- Restaurant Details Modal -->
+    <div id="restaurant-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 overflow-y-auto p-2 md:p-4">
+        <div class="bg-white rounded-lg w-full max-w-4xl my-4 md:my-8 max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
+            <!-- Restaurant Header -->
+            <div class="relative">
+                <div id="restaurant-header-image" class="h-48 md:h-64 bg-brown-200 rounded-t-lg overflow-hidden">
+                    <!-- Restaurant image will be loaded here -->
+                </div>
+                <button id="close-details-modal" class="absolute top-2 right-2 md:top-4 md:right-4 bg-white text-brown-800 rounded-full w-8 h-8 md:w-10 md:h-10 flex items-center justify-center hover:bg-brown-100 transition">
+                    <i class="fas fa-times text-sm md:text-base"></i>
+                </button>
+            </div>
+
+            <!-- Image Gallery -->
+            <div id="restaurant-gallery-container" class="hidden px-4 md:px-6 pt-3 md:pt-4">
+                <div id="restaurant-gallery" class="grid grid-cols-3 md:grid-cols-4 gap-2">
+                    <!-- Gallery images will be loaded here -->
+                </div>
+            </div>
+
+            <div class="p-4 md:p-6">
+                <!-- Restaurant Info -->
+                <div class="mb-4 md:mb-6">
+                    <h2 id="details-restaurant-name" class="text-xl md:text-3xl font-bold text-brown-800 mb-2"></h2>
+                    <div class="flex flex-wrap gap-2 md:gap-4 text-xs md:text-base text-brown-600 mb-3 md:mb-4">
+                        <span id="details-cuisine"><i class="fas fa-utensils mr-1 md:mr-2"></i></span>
+                        <span id="details-location"><i class="fas fa-map-marker-alt mr-1 md:mr-2"></i></span>
+                        <span id="details-price"><i class="fas fa-dollar-sign mr-1 md:mr-2"></i></span>
+                        <span id="details-hours"><i class="fas fa-clock mr-1 md:mr-2"></i></span>
+                    </div>
+                    <p id="details-description" class="text-sm md:text-base text-brown-700 mb-3 md:mb-4"></p>
+                    <div class="flex gap-3 md:gap-4 mb-3 md:mb-4">
+                        <a id="details-phone" href="#" class="text-sm md:text-base text-brown-600 hover:text-brown-800">
+                            <i class="fas fa-phone mr-1 md:mr-2"></i>
+                        </a>
+                        <a id="details-email" href="#" class="text-sm md:text-base text-brown-600 hover:text-brown-800">
+                            <i class="fas fa-envelope mr-1 md:mr-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Restaurant Video -->
+                <div id="restaurant-video-container" class="mb-4 md:mb-6 hidden">
+                    <h3 class="text-lg md:text-xl font-bold text-brown-800 mb-2 md:mb-3">Restaurant Tour</h3>
+                    <video id="restaurant-video" controls class="w-full rounded-lg shadow-lg max-h-64 md:max-h-96">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <!-- Menu Section -->
+                <div class="mb-4 md:mb-6">
+                    <h3 class="text-lg md:text-2xl font-bold text-brown-800 mb-3 md:mb-4">Our Menu</h3>
+                    <div id="restaurant-menu" class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                        <!-- Menu items will be loaded here -->
+                    </div>
+                    <div id="no-menu-message" class="text-center py-6 md:py-8 hidden">
+                        <i class="fas fa-utensils text-3xl md:text-4xl text-brown-300 mb-2 md:mb-3"></i>
+                        <p class="text-sm md:text-base text-brown-500">Menu coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-2 md:gap-3 pt-3 md:pt-4 border-t border-brown-200">
+                    <button id="cancel-details" class="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base text-brown-600 hover:text-brown-800 border border-brown-300 rounded-lg font-medium">
+                        Close
+                    </button>
+                    <button id="proceed-to-reserve" class="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-brown-600 text-white rounded-lg hover:bg-brown-700 transition font-medium">
+                        <i class="fas fa-calendar-check mr-1 md:mr-2"></i>Make Reservation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservation Modal -->
+    <div id="reservation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-2 md:p-4">
+        <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-md max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 md:mb-4">
+                <h3 class="text-lg md:text-xl font-bold text-brown-800">Make a Reservation</h3>
+                <button id="close-modal" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- Restaurant Summary -->
+            <div id="reservation-restaurant-summary" class="flex items-center gap-3 mb-4 md:mb-6 bg-brown-50 rounded-lg p-2 md:p-3 border border-brown-200">
+                <img id="reservation-restaurant-image" src="" alt="Restaurant" class="h-12 w-12 md:h-16 md:w-16 rounded-lg object-cover bg-brown-200" />
+                <div>
+                    <div id="reservation-restaurant-name" class="font-bold text-brown-800 text-base md:text-lg"></div>
+                    <div id="reservation-restaurant-location" class="text-brown-600 text-xs md:text-sm"></div>
+                </div>
+            </div>
+            <form id="reservation-form">
+                <input type="hidden" id="restaurant-id">
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="customer-name">Full Name</label>
+                    <input type="text" id="customer-name" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="customer-email">Email</label>
+                    <input type="email" id="customer-email" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="customer-phone">Phone Number</label>
+                    <input type="tel" id="customer-phone" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="reservation-date">Date</label>
+                    <input type="date" id="reservation-date" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="reservation-time">Time</label>
+                    <select id="reservation-time" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                        <option value="">Select time</option>
+                        <!-- Time options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="party-size">Party Size</label>
+                    <select id="party-size" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                        <option value="">Select number of guests</option>
+                        <option value="1">1 person</option>
+                        <option value="2">2 people</option>
+                        <option value="3">3 people</option>
+                        <option value="4">4 people</option>
+                        <option value="5">5 people</option>
+                        <option value="6">6 people</option>
+                        <option value="7">7 people</option>
+                        <option value="8">8 people</option>
+                        <option value="9">9 people</option>
+                        <option value="10">10 people</option>
+                        <option value="11">More than 10</option>
+                    </select>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="occasion">Occasion (Optional)</label>
+                    <select id="occasion" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <option value="">Select occasion</option>
+                        <option value="Birthday">Birthday</option>
+                        <option value="Anniversary">Anniversary</option>
+                        <option value="Business Dinner">Business Dinner</option>
+                        <option value="Date Night">Date Night</option>
+                        <option value="Family Gathering">Family Gathering</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-3 md:mb-4">
+                    <label class="block text-brown-700 mb-1 md:mb-2 text-sm md:text-base font-medium" for="special-requests">Special Requests (Optional)</label>
+                    <textarea id="special-requests" class="w-full px-3 py-2 text-sm md:text-base border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" rows="3"></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancel-reservation" class="mr-3 md:mr-4 px-3 md:px-4 py-2 text-sm md:text-base text-brown-600 hover:text-brown-800">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-brown-600 text-white px-3 md:px-4 py-2 text-sm md:text-base rounded-lg hover:bg-brown-700 transition">
+                        Book Reservation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Reservation Modal -->
+    <div id="edit-reservation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-brown-800">Modify Reservation</h3>
+                <button id="close-edit-modal" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="edit-reservation-form">
+                <input type="hidden" id="edit-reservation-id">
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="edit-reservation-date">Date</label>
+                    <input type="date" id="edit-reservation-date" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="edit-reservation-time">Time</label>
+                    <select id="edit-reservation-time" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                        <option value="">Select time</option>
+                        <!-- Time options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="edit-party-size">Party Size</label>
+                    <select id="edit-party-size" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
+                        <option value="">Select number of guests</option>
+                        <option value="1">1 person</option>
+                        <option value="2">2 people</option>
+                        <option value="3">3 people</option>
+                        <option value="4">4 people</option>
+                        <option value="5">5 people</option>
+                        <option value="6">6 people</option>
+                        <option value="7">7 people</option>
+                        <option value="8">8 people</option>
+                        <option value="9">9 people</option>
+                        <option value="10">10 people</option>
+                        <option value="11">More than 10</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="edit-occasion">Occasion (Optional)</label>
+                    <select id="edit-occasion" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <option value="">Select occasion</option>
+                        <option value="Birthday">Birthday</option>
+                        <option value="Anniversary">Anniversary</option>
+                        <option value="Business Dinner">Business Dinner</option>
+                        <option value="Date Night">Date Night</option>
+                        <option value="Family Gathering">Family Gathering</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-brown-700 mb-2 font-medium" for="edit-special-requests">Special Requests (Optional)</label>
+                    <textarea id="edit-special-requests" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" rows="3"></textarea>
+                </div>
+                <div class="flex justify-between">
+                    <button type="button" id="cancel-reservation-btn" class="px-4 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-lg">
+                        <i class="fas fa-times mr-2"></i>Cancel Reservation
+                    </button>
+                    <div class="flex space-x-2">
+                        <button type="button" id="cancel-edit-reservation" class="px-4 py-2 text-brown-600 hover:text-brown-800">
+                            Discard
+                        </button>
+                        <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notifications-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-2 md:p-4">
+        <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-md max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 md:mb-4">
+                <h3 class="text-lg md:text-xl font-bold text-brown-800">Notifications</h3>
+                <button id="close-notifications" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="notifications-container">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-2 md:p-4">
+        <div class="bg-white rounded-lg p-4 md:p-6 w-full max-w-md text-center">
+            <div class="text-green-500 text-4xl md:text-5xl mb-3 md:mb-4">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-lg md:text-xl font-bold mb-2 text-brown-800" id="success-title">Success!</h3>
+            <p class="mb-3 md:mb-4 text-sm md:text-base text-brown-600" id="success-message">Operation completed successfully.</p>
+            <button id="close-success" class="bg-brown-600 text-white px-3 md:px-4 py-2 text-sm md:text-base rounded-lg hover:bg-brown-700 transition">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation (visible only on mobile) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown-200 shadow-lg z-40 safe-area-inset-bottom">
+        <div class="flex justify-around items-center px-2 py-3">
+            <a href="#home" class="mobile-nav-link flex flex-col items-center px-3 py-2 text-brown-600 transition-colors duration-200" data-section="home">
+                <i class="fas fa-home text-xl mb-1"></i>
+                <span class="text-xs font-medium">Home</span>
+            </a>
+            <a href="#restaurants" class="mobile-nav-link flex flex-col items-center px-3 py-2 text-brown-400 transition-colors duration-200" data-section="restaurants">
+                <i class="fas fa-search text-xl mb-1"></i>
+                <span class="text-xs font-medium">Discover</span>
+            </a>
+            <a href="#reservations" class="mobile-nav-link flex flex-col items-center px-3 py-2 text-brown-400 transition-colors duration-200" data-section="reservations">
+                <i class="fas fa-calendar-alt text-xl mb-1"></i>
+                <span class="text-xs font-medium">Bookings</span>
+            </a>
+            <a href="#profile" class="mobile-nav-link flex flex-col items-center px-3 py-2 text-brown-400 transition-colors duration-200" data-section="profile">
+                <i class="fas fa-user text-xl mb-1"></i>
+                <span class="text-xs font-medium">Profile</span>
+            </a>
+        </div>
+    </nav>
+
+    <style>
+        /* Prevent horizontal scroll */
+        * {
+            max-width: 100%;
+        }
+        
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+        
+        /* Add padding to body on mobile to prevent content from being hidden behind bottom nav */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 80px;
+            }
+        }
+        
+        /* Active state for mobile nav */
+        .mobile-nav-link.active {
+            color: #977669;
+        }
+        
+        /* Support for safe area insets on notched phones */
+        .safe-area-inset-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Smooth tap feedback */
+        .mobile-nav-link:active {
+            transform: scale(0.95);
+            background-color: rgba(151, 118, 105, 0.1);
+            border-radius: 12px;
+        }
+        
+        /* Ensure container doesn't overflow */
+        .container {
+            max-width: 100%;
+        }
+    </style>
+
+    <script src="/js/splash.js"></script>
+    <script src="/js/customer.js"></script>
+</body>
+</html>

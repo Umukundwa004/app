@@ -1,0 +1,1294 @@
+// public/js/restaurant-admin.js - UPDATED WITH PROPER CONNECTIONS
+class RestaurantAdmin {
+    constructor() {
+        this.currentUser = null;
+        this.currentRestaurantId = null;
+        this.currentTab = 'dashboard';
+        this.reservations = [];
+        this.restaurants = [];
+        this.menuItems = [];
+        
+        this.init();
+    }
+
+    async init() {
+        await this.checkAuth();
+        this.setupEventListeners();
+        this.loadDashboardData();
+        this.loadMyRestaurants();
+    }
+
+    async checkAuth() {
+        try {
+            const response = await fetch('/api/user');
+            if (!response.ok) throw new Error('Not authenticated');
+            
+            const data = await response.json();
+            
+            if (data.loggedIn && data.user.user_type === 'restaurant_admin') {
+                this.currentUser = data.user;
+                document.getElementById('admin-name').textContent = data.user.name;
+            } else {
+                window.location.href = '/login';
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            window.location.href = '/login';
+        }
+    }
+
+    setupEventListeners() {
+        // Tab navigation
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tabName = e.target.closest('.tab-button').id.replace('-tab', '');
+                this.switchTab(tabName);
+            });
+        });
+
+        // Mobile bottom navigation
+        document.querySelectorAll('.mobile-admin-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = link.getAttribute('data-tab');
+                this.switchTab(tab);
+                // Update active states
+                document.querySelectorAll('.mobile-admin-nav-link').forEach(l => {
+                    l.classList.remove('active', 'text-brown-600');
+                    l.classList.add('text-brown-400');
+                });
+                link.classList.add('active', 'text-brown-600');
+                link.classList.remove('text-brown-400');
+            });
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            this.logout();
+        });
+        
+        // Mobile logout button
+        const mobileLogoutBtn = document.getElementById('logout-btn-mobile');
+        if (mobileLogoutBtn) {
+            mobileLogoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+        }
+
+        // Restaurant management
+        document.getElementById('add-restaurant-btn').addEventListener('click', () => {
+            this.openRestaurantModal();
+        });
+
+        document.getElementById('restaurant-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveRestaurant();
+        });
+
+        document.getElementById('cancel-restaurant').addEventListener('click', () => {
+            this.closeRestaurantModal();
+        });
+
+        document.getElementById('close-restaurant-modal').addEventListener('click', () => {
+            this.closeRestaurantModal();
+        });
+
+        // File upload previews - Multiple images
+        document.getElementById('restaurant-images').addEventListener('change', (e) => {
+            this.previewMultipleImages(e.target.files);
+        });
+
+        document.getElementById('restaurant-video').addEventListener('change', (e) => {
+            this.previewVideo(e.target.files[0]);
+        });
+
+        const removeVideoBtn = document.getElementById('remove-video');
+        if (removeVideoBtn) {
+            removeVideoBtn.addEventListener('click', () => {
+                document.getElementById('restaurant-video').value = '';
+                document.getElementById('video-preview').classList.add('hidden');
+            });
+        }
+
+        // Menu management
+        document.getElementById('add-menu-item-btn').addEventListener('click', () => {
+            this.openMenuItemModal();
+        });
+
+        document.getElementById('menu-item-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveMenuItem();
+        });
+
+        document.getElementById('cancel-menu-item').addEventListener('click', () => {
+            this.closeMenuItemModal();
+        });
+
+        document.getElementById('close-menu-item-modal').addEventListener('click', () => {
+            this.closeMenuItemModal();
+        });
+
+        // Restaurant filter for menu
+        document.getElementById('menu-restaurant-select').addEventListener('change', (e) => {
+            this.loadMenuItems(e.target.value);
+        });
+
+        // Availability management
+        document.getElementById('availability-restaurant').addEventListener('change', (e) => {
+            this.currentRestaurantId = e.target.value;
+            this.loadAvailability();
+        });
+
+        document.getElementById('availability-date').addEventListener('change', () => {
+            this.loadAvailability();
+        });
+
+        document.getElementById('save-availability-btn').addEventListener('click', () => {
+            this.saveAvailability();
+        });
+
+        // Reservation filters
+        document.getElementById('reservation-filter').addEventListener('change', () => {
+            this.loadReservations();
+        });
+
+        document.getElementById('restaurant-filter').addEventListener('change', () => {
+            this.loadReservations();
+        });
+
+        // Report generation
+        document.getElementById('generate-report-btn').addEventListener('click', () => {
+            this.generateReport();
+        });
+
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('reservation-details-modal')) {
+                this.closeReservationDetailsModal();
+            }
+            if (e.target === document.getElementById('restaurant-modal')) {
+                this.closeRestaurantModal();
+            }
+            if (e.target === document.getElementById('menu-item-modal')) {
+                this.closeMenuItemModal();
+            }
+        });
+
+        // Quick Actions
+        const quickActions = {
+            'add-restaurant': () => this.openRestaurantModal(),
+            'manage-menu': () => {
+                this.switchTab('menu');
+                // Optionally open add menu item modal
+                // this.openMenuItemModal();
+            },
+            'update-availability': () => this.switchTab('availability'),
+            'view-reports': () => this.switchTab('reports')
+        };
+
+        document.querySelectorAll('.quick-action').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.getAttribute('data-action');
+                if (quickActions[action]) quickActions[action]();
+            });
+        });
+    }
+
+    switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('border-brown-600', 'text-brown-600');
+            button.classList.add('border-transparent', 'text-brown-500');
+        });
+
+        document.getElementById(`${tabName}-tab`).classList.add('border-brown-600', 'text-brown-600');
+        document.getElementById(`${tabName}-tab`).classList.remove('border-transparent', 'text-brown-500');
+
+        // Hide all tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // Show selected tab content
+        document.getElementById(`${tabName}-content`).classList.remove('hidden');
+
+        // Load tab-specific data
+        this.currentTab = tabName;
+        switch(tabName) {
+            case 'dashboard':
+                this.loadDashboardData();
+                break;
+            case 'reservations':
+                this.loadReservations();
+                break;
+            case 'restaurants':
+                this.loadMyRestaurants();
+                break;
+            case 'menu':
+                this.loadRestaurantsForMenu();
+                break;
+            case 'availability':
+                this.loadRestaurantsForAvailability();
+                break;
+            case 'reports':
+                this.loadRestaurantsForReports();
+                break;
+        }
+    }
+
+    async loadDashboardData() {
+        try {
+            // Load dashboard statistics
+            const statsResponse = await fetch('/api/restaurant-admin/dashboard-stats');
+            if (!statsResponse.ok) throw new Error('Failed to load stats');
+            
+            const stats = await statsResponse.json();
+
+            document.getElementById('pending-reservations-count').textContent = stats.pendingReservations || 0;
+            document.getElementById('confirmed-reservations-count').textContent = stats.confirmedToday || 0;
+            document.getElementById('total-restaurants-count').textContent = stats.totalRestaurants || 0;
+            document.getElementById('occupancy-rate').textContent = `${stats.occupancyRate || 0}%`;
+
+            // Load recent reservations
+            const reservationsResponse = await fetch('/api/restaurant-admin/reservations?limit=5');
+            if (reservationsResponse.ok) {
+                const reservations = await reservationsResponse.json();
+                this.displayRecentReservations(reservations);
+            }
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            this.showNotification('Error loading dashboard data', 'error');
+        }
+    }
+
+    displayRecentReservations(reservations) {
+        const container = document.getElementById('recent-reservations');
+        
+        if (!reservations || reservations.length === 0) {
+            container.innerHTML = '<p class="text-brown-500 text-center">No recent reservations</p>';
+            return;
+        }
+
+        container.innerHTML = reservations.map(reservation => `
+            <div class="flex justify-between items-center p-3 bg-white rounded-lg border border-brown-200">
+                <div>
+                    <div class="font-medium text-brown-800">${reservation.customer_name}</div>
+                    <div class="text-sm text-brown-600">${reservation.restaurant_name}</div>
+                    <div class="text-xs text-brown-500">${this.formatDate(reservation.reservation_date)} at ${this.formatTime(reservation.reservation_time)}</div>
+                </div>
+                <span class="px-2 py-1 rounded-full text-xs ${this.getStatusClass(reservation.status)}">
+                    ${this.getStatusText(reservation.status)}
+                </span>
+            </div>
+        `).join('');
+    }
+
+    async loadReservations() {
+        try {
+            const filter = document.getElementById('reservation-filter').value;
+            const restaurantFilter = document.getElementById('restaurant-filter').value;
+            
+            let url = '/api/restaurant-admin/reservations';
+            const params = new URLSearchParams();
+            
+            if (filter !== 'all') params.append('status', filter);
+            if (restaurantFilter !== 'all') params.append('restaurant_id', restaurantFilter);
+            
+            if (params.toString()) {
+                url += '?' + params.toString();
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to load reservations');
+            
+            this.reservations = await response.json();
+            this.displayReservations();
+        } catch (error) {
+            console.error('Error loading reservations:', error);
+            this.showNotification('Error loading reservations', 'error');
+        }
+    }
+
+    displayReservations() {
+        const container = document.getElementById('reservations-table');
+        const mobileContainer = document.getElementById('reservations-cards-mobile');
+        const noReservations = document.getElementById('no-reservations');
+
+        if (!this.reservations || this.reservations.length === 0) {
+            container.innerHTML = '';
+            if (mobileContainer) mobileContainer.innerHTML = '';
+            noReservations.classList.remove('hidden');
+            return;
+        }
+
+        noReservations.classList.add('hidden');
+        
+        // Desktop table view
+        container.innerHTML = this.reservations.map(reservation => `
+            <tr class="border-b border-brown-200 hover:bg-brown-50">
+                <td class="py-3 px-4">${reservation.id}</td>
+                <td class="py-3 px-4">
+                    <div class="font-medium">${reservation.customer_name}</div>
+                    <div class="text-sm text-brown-500">${reservation.customer_email}</div>
+                </td>
+                <td class="py-3 px-4">${reservation.restaurant_name}</td>
+                <td class="py-3 px-4">
+                    <div>${this.formatDate(reservation.reservation_date)}</div>
+                    <div class="text-sm text-brown-500">${this.formatTime(reservation.reservation_time)}</div>
+                </td>
+                <td class="py-3 px-4">${reservation.party_size} people</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-1 rounded-full text-xs ${this.getStatusClass(reservation.status)}">
+                        ${this.getStatusText(reservation.status)}
+                    </span>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex space-x-2">
+                        <button class="view-reservation-btn text-blue-600 hover:text-blue-800" data-id="${reservation.id}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${reservation.status === 'pending' ? `
+                            <button class="confirm-reservation-btn text-green-600 hover:text-green-800" data-id="${reservation.id}">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="reject-reservation-btn text-red-600 hover:text-red-800" data-id="${reservation.id}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+        
+        // Mobile card view
+        if (mobileContainer) {
+            mobileContainer.innerHTML = this.reservations.map(reservation => `
+                <div class="bg-white border border-brown-200 rounded-lg p-3 shadow-sm">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <div class="font-semibold text-brown-800 text-sm">ID: ${reservation.id}</div>
+                            <div class="font-medium text-brown-700 text-sm">${reservation.customer_name}</div>
+                            <div class="text-xs text-brown-500">${reservation.customer_email}</div>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs ${this.getStatusClass(reservation.status)}">
+                            ${this.getStatusText(reservation.status)}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-1 mb-3 text-xs text-brown-600">
+                        <div><i class="fas fa-store w-4"></i> ${reservation.restaurant_name}</div>
+                        <div><i class="fas fa-calendar w-4"></i> ${this.formatDate(reservation.reservation_date)}</div>
+                        <div><i class="fas fa-clock w-4"></i> ${this.formatTime(reservation.reservation_time)}</div>
+                        <div><i class="fas fa-users w-4"></i> ${reservation.party_size} people</div>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button class="view-reservation-btn flex-1 bg-blue-50 text-blue-700 py-1.5 px-3 rounded text-xs font-medium hover:bg-blue-100" data-id="${reservation.id}">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                        ${reservation.status === 'pending' ? `
+                            <button class="confirm-reservation-btn flex-1 bg-green-50 text-green-700 py-1.5 px-3 rounded text-xs font-medium hover:bg-green-100" data-id="${reservation.id}">
+                                <i class="fas fa-check mr-1"></i>Confirm
+                            </button>
+                            <button class="reject-reservation-btn flex-1 bg-red-50 text-red-700 py-1.5 px-3 rounded text-xs font-medium hover:bg-red-100" data-id="${reservation.id}">
+                                <i class="fas fa-times mr-1"></i>Reject
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add event listeners to action buttons
+        this.attachReservationEventListeners();
+    }
+
+    attachReservationEventListeners() {
+        document.querySelectorAll('.view-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.viewReservationDetails(reservationId);
+            });
+        });
+
+        document.querySelectorAll('.confirm-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.updateReservationStatus(reservationId, 'confirmed');
+            });
+        });
+
+        document.querySelectorAll('.reject-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.updateReservationStatus(reservationId, 'rejected');
+            });
+        });
+    }
+
+    async viewReservationDetails(reservationId) {
+        try {
+            const reservation = this.reservations.find(r => r.id == reservationId);
+            if (!reservation) return;
+
+            const detailsContent = document.getElementById('reservation-details-content');
+            detailsContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-bold text-brown-800 mb-2">Customer Information</h4>
+                        <p><span class="font-medium">Name:</span> ${reservation.customer_name}</p>
+                        <p><span class="font-medium">Email:</span> ${reservation.customer_email}</p>
+                        <p><span class="font-medium">Phone:</span> ${reservation.customer_phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-brown-800 mb-2">Reservation Details</h4>
+                        <p><span class="font-medium">Restaurant:</span> ${reservation.restaurant_name}</p>
+                        <p><span class="font-medium">Date:</span> ${this.formatDate(reservation.reservation_date)}</p>
+                        <p><span class="font-medium">Time:</span> ${this.formatTime(reservation.reservation_time)}</p>
+                        <p><span class="font-medium">Party Size:</span> ${reservation.party_size} people</p>
+                    </div>
+                </div>
+                ${reservation.occasion ? `
+                    <div>
+                        <h4 class="font-bold text-brown-800 mb-2">Occasion</h4>
+                        <p>${reservation.occasion}</p>
+                    </div>
+                ` : ''}
+                ${reservation.special_requests ? `
+                    <div>
+                        <h4 class="font-bold text-brown-800 mb-2">Special Requests</h4>
+                        <p>${reservation.special_requests}</p>
+                    </div>
+                ` : ''}
+                <div>
+                    <h4 class="font-bold text-brown-800 mb-2">Status</h4>
+                    <span class="px-3 py-1 rounded-full text-sm ${this.getStatusClass(reservation.status)}">
+                        ${this.getStatusText(reservation.status)}
+                    </span>
+                </div>
+                ${reservation.status === 'pending' ? `
+                    <div class="flex space-x-2 pt-4 border-t border-brown-200">
+                        <button class="confirm-reservation-detail-btn bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition" data-id="${reservation.id}">
+                            Confirm Reservation
+                        </button>
+                        <button class="reject-reservation-detail-btn bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition" data-id="${reservation.id}">
+                            Reject Reservation
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+
+            // Add event listeners for action buttons in modal
+            document.querySelector('.confirm-reservation-detail-btn')?.addEventListener('click', () => {
+                this.updateReservationStatus(reservationId, 'confirmed');
+                this.closeReservationDetailsModal();
+            });
+            
+            document.querySelector('.reject-reservation-detail-btn')?.addEventListener('click', () => {
+                this.updateReservationStatus(reservationId, 'rejected');
+                this.closeReservationDetailsModal();
+            });
+
+            document.getElementById('reservation-details-modal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading reservation details:', error);
+            this.showNotification('Error loading reservation details', 'error');
+        }
+    }
+
+    closeReservationDetailsModal() {
+        document.getElementById('reservation-details-modal').classList.add('hidden');
+    }
+
+    async updateReservationStatus(reservationId, status) {
+        if (!confirm(`Are you sure you want to ${status} this reservation?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/reservations/${reservationId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            });
+
+            if (response.ok) {
+                this.showNotification(`Reservation ${status} successfully`, 'success');
+                this.loadReservations();
+                if (this.currentTab === 'dashboard') {
+                    this.loadDashboardData();
+                }
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error updating reservation status:', error);
+            this.showNotification('Error updating reservation status', 'error');
+        }
+    }
+
+    async loadMyRestaurants() {
+        try {
+            const response = await fetch('/api/restaurant-admin/restaurants');
+            if (!response.ok) throw new Error('Failed to load restaurants');
+            
+            this.restaurants = await response.json();
+            this.displayRestaurants();
+            this.populateRestaurantFilters();
+        } catch (error) {
+            console.error('Error loading restaurants:', error);
+            this.showNotification('Error loading restaurants', 'error');
+        }
+    }
+
+    displayRestaurants() {
+        const container = document.getElementById('my-restaurants-container');
+        
+        if (!this.restaurants || this.restaurants.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-3 text-center py-12">
+                    <i class="fas fa-store text-5xl text-brown-300 mb-4"></i>
+                    <h3 class="text-xl text-brown-500 mb-2">No restaurants found</h3>
+                    <p class="text-brown-400">Add your first restaurant to get started</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.restaurants.map(restaurant => `
+            <div class="bg-white rounded-lg shadow-md overflow-hidden border border-brown-200">
+                <div class="h-40 bg-brown-200 flex items-center justify-center relative overflow-hidden">
+                    ${restaurant.image_url 
+                        ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="w-full h-full object-cover">`
+                        : `<i class="fas fa-utensils text-4xl text-brown-400"></i>`
+                    }
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2 text-brown-800">${restaurant.name}</h3>
+                    <p class="text-brown-600 mb-4 line-clamp-2">${restaurant.description}</p>
+                    <div class="mb-4 space-y-2 text-sm">
+                        <p class="text-brown-700"><i class="fas fa-map-marker-alt mr-2"></i>${restaurant.location}</p>
+                        <p class="text-brown-700"><i class="fas fa-clock mr-2"></i>${this.formatTime(restaurant.opening_time)} - ${this.formatTime(restaurant.closing_time)}</p>
+                        <p class="text-brown-700"><i class="fas fa-phone mr-2"></i>${restaurant.contact_phone}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="edit-restaurant-btn flex-1 bg-brown-600 text-white py-2 rounded-lg hover:bg-brown-700 transition" data-id="${restaurant.id}">
+                            <i class="fas fa-edit mr-2"></i>Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Add event listeners
+        document.querySelectorAll('.edit-restaurant-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const restaurantId = e.target.closest('button').getAttribute('data-id');
+                this.editRestaurant(restaurantId);
+            });
+        });
+    }
+
+    populateRestaurantFilters() {
+        const menuSelect = document.getElementById('menu-restaurant-select');
+        const availabilitySelect = document.getElementById('availability-restaurant');
+        const reservationFilter = document.getElementById('restaurant-filter');
+        const reportSelect = document.getElementById('report-restaurant');
+
+        [menuSelect, availabilitySelect, reservationFilter, reportSelect].forEach(select => {
+            if (select) {
+                select.innerHTML = '<option value="all">All Restaurants</option>' +
+                    this.restaurants.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+            }
+        });
+    }
+
+    openRestaurantModal(restaurant = null) {
+        const modal = document.getElementById('restaurant-modal');
+        const title = document.getElementById('restaurant-modal-title');
+        
+        // Reset previews
+        document.getElementById('new-images-preview').classList.add('hidden');
+        document.getElementById('existing-images-gallery').classList.add('hidden');
+        document.getElementById('new-images-container').innerHTML = '';
+        
+        if (restaurant) {
+            title.textContent = 'Edit Restaurant';
+            this.populateRestaurantForm(restaurant);
+            // Load existing images
+            this.loadRestaurantImages(restaurant.id);
+        } else {
+            title.textContent = 'Add Restaurant';
+            document.getElementById('restaurant-form').reset();
+            document.getElementById('restaurant-id').value = '';
+        }
+        
+        modal.classList.remove('hidden');
+    }
+
+    closeRestaurantModal() {
+        document.getElementById('restaurant-modal').classList.add('hidden');
+        // Clear file inputs
+        document.getElementById('restaurant-images').value = '';
+        document.getElementById('restaurant-video').value = '';
+        document.getElementById('new-images-preview').classList.add('hidden');
+        document.getElementById('existing-images-gallery').classList.add('hidden');
+        document.getElementById('video-preview').classList.add('hidden');
+    }
+
+    populateRestaurantForm(restaurant) {
+        document.getElementById('restaurant-id').value = restaurant.id;
+        document.getElementById('restaurant-name').value = restaurant.name;
+        document.getElementById('restaurant-location').value = restaurant.location;
+        document.getElementById('restaurant-phone').value = restaurant.contact_phone;
+        document.getElementById('restaurant-email').value = restaurant.contact_email;
+        document.getElementById('restaurant-opening').value = restaurant.opening_time;
+        document.getElementById('restaurant-closing').value = restaurant.closing_time;
+        document.getElementById('restaurant-cuisine').value = restaurant.cuisine_type || '';
+        document.getElementById('restaurant-price').value = restaurant.price_range || '2';
+        document.getElementById('restaurant-description').value = restaurant.description;
+        document.getElementById('restaurant-tables').value = restaurant.tables_count || 10;
+    }
+
+    async saveRestaurant() {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('restaurant-name').value);
+        formData.append('location', document.getElementById('restaurant-location').value);
+        formData.append('contact_phone', document.getElementById('restaurant-phone').value);
+        formData.append('contact_email', document.getElementById('restaurant-email').value);
+        formData.append('opening_time', document.getElementById('restaurant-opening').value);
+        formData.append('closing_time', document.getElementById('restaurant-closing').value);
+        formData.append('cuisine_type', document.getElementById('restaurant-cuisine').value);
+        formData.append('price_range', document.getElementById('restaurant-price').value);
+        formData.append('description', document.getElementById('restaurant-description').value);
+        formData.append('tables_count', document.getElementById('restaurant-tables').value);
+
+        // Handle multiple image uploads
+        const imageFiles = document.getElementById('restaurant-images').files;
+        if (imageFiles && imageFiles.length > 0) {
+            for (let i = 0; i < imageFiles.length; i++) {
+                formData.append('images', imageFiles[i]);
+            }
+        }
+        
+        // Handle video upload
+        const videoFile = document.getElementById('restaurant-video').files[0];
+        if (videoFile) {
+            formData.append('video', videoFile);
+        }
+
+        const restaurantId = document.getElementById('restaurant-id').value;
+        const url = restaurantId ? `/api/restaurants/${restaurantId}` : '/api/restaurant-admin/restaurants';
+        const method = restaurantId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                body: formData  // No Content-Type header - browser sets it automatically with boundary
+            });
+
+            if (response.ok) {
+                this.showNotification('Restaurant saved successfully', 'success');
+                this.closeRestaurantModal();
+                this.loadMyRestaurants();
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error saving restaurant:', error);
+            this.showNotification('Error saving restaurant', 'error');
+        }
+    }
+
+    async editRestaurant(restaurantId) {
+        const restaurant = this.restaurants.find(r => r.id == restaurantId);
+        if (restaurant) {
+            this.openRestaurantModal(restaurant);
+        }
+    }
+
+    async loadRestaurantsForMenu() {
+        await this.loadMyRestaurants();
+        if (this.restaurants.length > 0) {
+            this.loadMenuItems(this.restaurants[0].id);
+        }
+    }
+
+    async loadMenuItems(restaurantId) {
+        try {
+            const response = await fetch(`/api/restaurants/${restaurantId}/menu`);
+            if (!response.ok) throw new Error('Failed to load menu items');
+            
+            this.menuItems = await response.json();
+            this.displayMenuItems();
+        } catch (error) {
+            console.error('Error loading menu items:', error);
+            this.showNotification('Error loading menu items', 'error');
+        }
+    }
+
+    displayMenuItems() {
+        const container = document.getElementById('menu-items-container');
+        
+        if (!this.menuItems || this.menuItems.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8 md:py-12">
+                    <i class="fas fa-utensils text-4xl md:text-5xl text-brown-300 mb-3 md:mb-4"></i>
+                    <h3 class="text-lg md:text-xl text-brown-500 mb-2">No menu items found</h3>
+                    <p class="text-brown-400 text-xs md:text-sm">Add your first menu item</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.menuItems.map(item => `
+            <div class="bg-white rounded-lg shadow-md border border-brown-200 p-3 md:p-6 hover:shadow-lg transition">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="text-sm md:text-lg font-bold text-brown-800 flex-1 pr-2">${item.name}</h4>
+                    <span class="px-2 py-0.5 md:py-1 bg-brown-100 text-brown-700 rounded text-[0.65rem] md:text-xs whitespace-nowrap">${item.category}</span>
+                </div>
+                <p class="text-brown-600 mb-2 md:mb-3 text-xs md:text-sm line-clamp-2">${item.description}</p>
+                <div class="mb-2 md:mb-3">
+                    <span class="text-brown-700 font-bold text-sm md:text-lg">RWF ${parseFloat(item.price).toLocaleString()}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button class="edit-menu-item-btn flex-1 bg-brown-600 text-white py-1.5 md:py-2 rounded hover:bg-brown-700 transition text-xs md:text-sm" data-id="${item.id}">
+                        <i class="fas fa-edit mr-1"></i><span class="hidden sm:inline">Edit</span><span class="sm:hidden">Edit</span>
+                    </button>
+                    <button class="delete-menu-item-btn flex-1 bg-red-600 text-white py-1.5 md:py-2 rounded hover:bg-red-700 transition text-xs md:text-sm" data-id="${item.id}">
+                        <i class="fas fa-trash mr-1"></i><span class="hidden sm:inline">Delete</span><span class="sm:hidden">Delete</span>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Add event listeners
+        document.querySelectorAll('.edit-menu-item-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const itemId = e.target.closest('button').getAttribute('data-id');
+                this.editMenuItem(itemId);
+            });
+        });
+
+        document.querySelectorAll('.delete-menu-item-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const itemId = e.target.closest('button').getAttribute('data-id');
+                this.deleteMenuItem(itemId);
+            });
+        });
+    }
+
+    openMenuItemModal(menuItem = null) {
+        const restaurantId = document.getElementById('menu-restaurant-select').value;
+        if (!restaurantId || restaurantId === 'all') {
+            this.showNotification('Please select a restaurant first', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('menu-item-modal');
+        const title = document.getElementById('menu-item-modal-title');
+        
+        if (menuItem) {
+            title.textContent = 'Edit Menu Item';
+            this.populateMenuItemForm(menuItem);
+        } else {
+            title.textContent = 'Add Menu Item';
+            document.getElementById('menu-item-form').reset();
+            document.getElementById('menu-item-id').value = '';
+            document.getElementById('menu-item-restaurant-id').value = restaurantId;
+        }
+        
+        modal.classList.remove('hidden');
+    }
+
+    closeMenuItemModal() {
+        document.getElementById('menu-item-modal').classList.add('hidden');
+    }
+
+    populateMenuItemForm(menuItem) {
+        document.getElementById('menu-item-id').value = menuItem.id;
+        document.getElementById('menu-item-restaurant-id').value = menuItem.restaurant_id;
+        document.getElementById('menu-item-name').value = menuItem.name;
+        document.getElementById('menu-item-description').value = menuItem.description;
+        document.getElementById('menu-item-price').value = menuItem.price;
+        document.getElementById('menu-item-category').value = menuItem.category || '';
+        document.getElementById('menu-item-cuisine').value = menuItem.cuisine || '';
+    }
+
+    async saveMenuItem() {
+        const formData = {
+            name: document.getElementById('menu-item-name').value,
+            description: document.getElementById('menu-item-description').value,
+            price: document.getElementById('menu-item-price').value,
+            category: document.getElementById('menu-item-category').value,
+            cuisine: document.getElementById('menu-item-cuisine').value,
+            restaurant_id: document.getElementById('menu-item-restaurant-id').value
+        };
+
+        const menuItemId = document.getElementById('menu-item-id').value;
+        const url = menuItemId ? `/api/menu-items/${menuItemId}` : '/api/menu-items';
+        const method = menuItemId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                this.showNotification('Menu item saved successfully', 'success');
+                this.closeMenuItemModal();
+                this.loadMenuItems(formData.restaurant_id);
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error saving menu item:', error);
+            this.showNotification('Error saving menu item', 'error');
+        }
+    }
+
+    async editMenuItem(menuItemId) {
+        const menuItem = this.menuItems.find(item => item.id == menuItemId);
+        if (menuItem) {
+            this.openMenuItemModal(menuItem);
+        }
+    }
+
+    async deleteMenuItem(menuItemId) {
+        if (!confirm('Are you sure you want to delete this menu item?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/menu-items/${menuItemId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                this.showNotification('Menu item deleted successfully', 'success');
+                const restaurantId = document.getElementById('menu-restaurant-select').value;
+                this.loadMenuItems(restaurantId);
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+            this.showNotification('Error deleting menu item', 'error');
+        }
+    }
+
+    async loadRestaurantsForAvailability() {
+        await this.loadMyRestaurants();
+        if (this.restaurants.length > 0) {
+            this.currentRestaurantId = this.restaurants[0].id;
+            document.getElementById('availability-date').value = new Date().toISOString().split('T')[0];
+            this.loadAvailability();
+        }
+    }
+
+    async loadAvailability() {
+        if (!this.currentRestaurantId) return;
+
+        const date = document.getElementById('availability-date').value;
+        if (!date) return;
+
+        try {
+            const response = await fetch(`/api/restaurants/${this.currentRestaurantId}/availability?date=${date}`);
+            if (!response.ok) throw new Error('Failed to load availability');
+            
+            const availability = await response.json();
+            this.displayAvailability(availability);
+        } catch (error) {
+            console.error('Error loading availability:', error);
+            this.showNotification('Error loading availability', 'error');
+        }
+    }
+
+    displayAvailability(availability) {
+        const container = document.getElementById('availability-container');
+        
+        // Generate time slots from opening to closing time
+        const restaurant = this.restaurants.find(r => r.id == this.currentRestaurantId);
+        if (!restaurant) return;
+
+        const timeSlots = this.generateTimeSlots(restaurant.opening_time, restaurant.closing_time);
+        
+        container.innerHTML = `
+            <h4 class="text-lg font-semibold text-brown-800 mb-4">Table Availability for ${document.getElementById('availability-date').value}</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                ${timeSlots.map(timeSlot => {
+                    const availableSlot = availability.find(slot => slot.time_slot === timeSlot);
+                    const availableTables = availableSlot ? availableSlot.available_tables : restaurant.tables_count;
+                    
+                    return `
+                        <div class="bg-white p-4 rounded-lg border border-brown-200 text-center">
+                            <div class="font-medium text-brown-800 mb-2">${this.formatTime(timeSlot)}</div>
+                            <input type="number" 
+                                   class="w-full px-2 py-1 border border-brown-300 rounded text-center availability-input"
+                                   data-time="${timeSlot}"
+                                   value="${availableTables}"
+                                   min="0" 
+                                   max="${restaurant.tables_count}">
+                            <div class="text-xs text-brown-500 mt-1">of ${restaurant.tables_count}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    async saveAvailability() {
+        if (!this.currentRestaurantId) {
+            this.showNotification('Please select a restaurant', 'error');
+            return;
+        }
+
+        const date = document.getElementById('availability-date').value;
+        if (!date) {
+            this.showNotification('Please select a date', 'error');
+            return;
+        }
+
+        const inputs = document.querySelectorAll('.availability-input');
+        const availabilityData = [];
+
+        inputs.forEach(input => {
+            availabilityData.push({
+                time_slot: input.getAttribute('data-time'),
+                available_tables: parseInt(input.value) || 0
+            });
+        });
+
+        try {
+            const response = await fetch('/api/table-availability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    restaurant_id: this.currentRestaurantId,
+                    date: date,
+                    availability: availabilityData
+                })
+            });
+
+            if (response.ok) {
+                this.showNotification('Table availability saved successfully', 'success');
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error saving availability:', error);
+            this.showNotification('Error saving table availability', 'error');
+        }
+    }
+
+    async loadRestaurantsForReports() {
+        await this.loadMyRestaurants();
+    }
+
+    async generateReport() {
+        const restaurantId = document.getElementById('report-restaurant').value;
+        const startDate = document.getElementById('report-start-date').value;
+        const endDate = document.getElementById('report-end-date').value;
+
+        if (!startDate || !endDate) {
+            this.showNotification('Please select start and end dates', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/restaurant-admin/reports?restaurant_id=${restaurantId}&start_date=${startDate}&end_date=${endDate}`);
+            if (!response.ok) throw new Error('Failed to generate report');
+            
+            const reportData = await response.json();
+            this.displayReport(reportData);
+        } catch (error) {
+            console.error('Error generating report:', error);
+            this.showNotification('Error generating report', 'error');
+        }
+    }
+
+    displayReport(reportData) {
+        // Display report data in tables and charts
+        const tableBody = document.getElementById('reports-table');
+        
+        if (reportData.dailyData && reportData.dailyData.length > 0) {
+            tableBody.innerHTML = reportData.dailyData.map(day => `
+                <tr class="border-b border-brown-200">
+                    <td class="py-3 px-4">${this.formatDate(day.date)}</td>
+                    <td class="py-3 px-4">${day.total_reservations}</td>
+                    <td class="py-3 px-4">${day.confirmed}</td>
+                    <td class="py-3 px-4">${day.pending}</td>
+                    <td class="py-3 px-4">${day.cancelled}</td>
+                    <td class="py-3 px-4">${day.occupancy_rate}%</td>
+                </tr>
+            `).join('');
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-brown-500">
+                        No data available for the selected period
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Update charts (simplified - in real implementation, use Chart.js or similar)
+        const statusSummary = reportData.statusSummary || {};
+        document.getElementById('status-chart').innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-brown-600 mb-2">Status Distribution</div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span>Confirmed:</span> <span>${statusSummary.confirmed || 0}</span></div>
+                    <div class="flex justify-between"><span>Pending:</span> <span>${statusSummary.pending || 0}</span></div>
+                    <div class="flex justify-between"><span>Cancelled:</span> <span>${statusSummary.cancelled || 0}</span></div>
+                    <div class="flex justify-between"><span>Rejected:</span> <span>${statusSummary.rejected || 0}</span></div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Utility methods
+    generateTimeSlots(startTime, endTime) {
+        const slots = [];
+        let current = new Date(`2000-01-01T${startTime}`);
+        const end = new Date(`2000-01-01T${endTime}`);
+
+        while (current < end) {
+            slots.push(current.toTimeString().slice(0, 8));
+            current.setMinutes(current.getMinutes() + 30);
+        }
+
+        return slots;
+    }
+
+    formatTime(timeString) {
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const formattedHour = hour % 12 || 12;
+        return `${formattedHour}:${minutes} ${ampm}`;
+    }
+
+    formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    getStatusClass(status) {
+        switch(status) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800';
+            case 'confirmed': return 'bg-green-100 text-green-800';
+            case 'rejected': return 'bg-red-100 text-red-800';
+            case 'cancelled': return 'bg-gray-100 text-gray-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    getStatusText(status) {
+        switch(status) {
+            case 'pending': return 'Pending';
+            case 'confirmed': return 'Confirmed';
+            case 'rejected': return 'Rejected';
+            case 'cancelled': return 'Cancelled';
+            default: return status;
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Create a simple notification system
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    previewImage(file) {
+        if (!file) return;
+        
+        const preview = document.getElementById('image-preview');
+        const img = document.getElementById('preview-img');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    previewMultipleImages(files) {
+        if (!files || files.length === 0) return;
+        
+        const container = document.getElementById('new-images-container');
+        const preview = document.getElementById('new-images-preview');
+        
+        // Clear previous previews
+        container.innerHTML = '';
+        
+        // Preview each file
+        Array.from(files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageCard = document.createElement('div');
+                imageCard.className = 'relative group';
+                imageCard.innerHTML = `
+                    <img src="${e.target.result}" class="w-full h-24 object-cover rounded-lg" alt="Preview ${index + 1}">
+                    <div class="absolute top-1 right-1 bg-brown-600 text-white text-xs px-2 py-1 rounded">
+                        ${index === 0 ? 'Primary' : `#${index + 1}`}
+                    </div>
+                `;
+                container.appendChild(imageCard);
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        preview.classList.remove('hidden');
+    }
+
+    async loadRestaurantImages(restaurantId) {
+        try {
+            const response = await fetch(`/api/restaurants/${restaurantId}/images`);
+            if (!response.ok) throw new Error('Failed to load images');
+            
+            const images = await response.json();
+            this.displayExistingImages(images, restaurantId);
+        } catch (error) {
+            console.error('Error loading restaurant images:', error);
+        }
+    }
+
+    displayExistingImages(images, restaurantId) {
+        if (!images || images.length === 0) {
+            document.getElementById('existing-images-gallery').classList.add('hidden');
+            return;
+        }
+        
+        const container = document.getElementById('existing-images-container');
+        const gallery = document.getElementById('existing-images-gallery');
+        
+        container.innerHTML = '';
+        
+        // Sort by display order
+        images.sort((a, b) => a.display_order - b.display_order);
+        
+        images.forEach((image, index) => {
+            const imageCard = document.createElement('div');
+            imageCard.className = 'relative group';
+            imageCard.innerHTML = `
+                <img src="${image.image_url}" class="w-full h-24 object-cover rounded-lg" alt="Restaurant image">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition rounded-lg flex items-center justify-center">
+                    <button onclick="restaurantAdmin.deleteRestaurantImage(${restaurantId}, ${image.id})" 
+                            class="opacity-0 group-hover:opacity-100 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition">
+                        <i class="fas fa-trash text-sm"></i>
+                    </button>
+                </div>
+                ${image.is_primary ? `
+                    <div class="absolute top-1 left-1 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                        Primary
+                    </div>
+                ` : `
+                    <button onclick="restaurantAdmin.setPrimaryImage(${restaurantId}, ${image.id})" 
+                            class="absolute top-1 left-1 bg-brown-600 text-white text-xs px-2 py-1 rounded hover:bg-brown-700 opacity-0 group-hover:opacity-100 transition">
+                        Set Primary
+                    </button>
+                `}
+            `;
+            container.appendChild(imageCard);
+        });
+        
+        gallery.classList.remove('hidden');
+    }
+
+    async deleteRestaurantImage(restaurantId, imageId) {
+        if (!confirm('Are you sure you want to delete this image?')) return;
+        
+        try {
+            const response = await fetch(`/api/restaurants/${restaurantId}/images/${imageId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                this.showNotification('Image deleted successfully', 'success');
+                this.loadRestaurantImages(restaurantId);
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            this.showNotification('Error deleting image', 'error');
+        }
+    }
+
+    async setPrimaryImage(restaurantId, imageId) {
+        try {
+            const response = await fetch(`/api/restaurants/${restaurantId}/images/${imageId}/primary`, {
+                method: 'PUT'
+            });
+            
+            if (response.ok) {
+                this.showNotification('Primary image updated', 'success');
+                this.loadRestaurantImages(restaurantId);
+                this.loadMyRestaurants(); // Refresh restaurant list
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error setting primary image:', error);
+            this.showNotification('Error setting primary image', 'error');
+        }
+    }
+
+    previewVideo(file) {
+        if (!file) return;
+        
+        const preview = document.getElementById('video-preview');
+        const video = document.getElementById('preview-video');
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            video.src = e.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.location.href = '/login';
+        }
+    }
+}
+
+// Initialize the restaurant admin when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new RestaurantAdmin();
+});
