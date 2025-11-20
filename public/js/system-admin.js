@@ -293,6 +293,8 @@ class SystemAdmin {
                 this.loadRestaurants();
                 break;
             case 'reservations':
+                // Ensure no media upload controls are present in this tab
+                try { this.removeReservationMediaControls(); } catch (e) {}
                 this.loadAllReservations();
                 break;
             case 'system':
@@ -301,6 +303,31 @@ class SystemAdmin {
             case 'audit':
                 this.loadAuditLogs();
                 break;
+        }
+    }
+
+    // Remove any media upload controls or previews that might appear inside the Reservations tab
+    // This is intentionally defensive: the reservations UI shouldn't have uploads, but if any exist
+    // remove them so the tab contains no image/video upload controls.
+    removeReservationMediaControls() {
+        try {
+            const reservationsEl = document.getElementById('reservations-content');
+            if (!reservationsEl) return;
+
+            // Remove any file inputs inside the reservations area
+            reservationsEl.querySelectorAll('input[type="file"]').forEach(el => el.remove());
+
+            // Remove any common preview containers that might be accidentally placed there
+            const previewIds = ['video-preview', 'preview-video', 'image-preview', 'preview-img', 'preview-images-container', 'preview-images'];
+            previewIds.forEach(id => {
+                const el = reservationsEl.querySelector('#' + id);
+                if (el) el.remove();
+            });
+
+            // Remove any elements with a class indicating media-preview inside the reservations area
+            reservationsEl.querySelectorAll('.reservation-media, .media-preview').forEach(el => el.remove());
+        } catch (e) {
+            console.debug('removeReservationMediaControls error', e);
         }
     }
 
@@ -699,9 +726,7 @@ class SystemAdmin {
                 </td>
                 <td class="py-3 px-4">
                     <div class="flex space-x-2">
-                            <button class="view-restaurant-btn text-gray-600 hover:text-gray-800" data-id="${restaurant.id}" title="View details">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            <button class="view-restaurant-btn text-gray-600 hover:text-gray-800 text-sm" data-id="${restaurant.id}" title="View details">View</button>
                         <button class="edit-restaurant-btn text-blue-600 hover:text-blue-800" data-id="${restaurant.id}">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -865,6 +890,9 @@ class SystemAdmin {
             return;
         }
 
+        // Safety: remove any media controls that might have slipped into reservations area
+        try { this.removeReservationMediaControls(); } catch (e) {}
+
         container.innerHTML = this.reservations.map(reservation => `
             <tr class="border-b border-brown-200 hover:bg-brown-50">
                 <td class="py-3 px-4">${reservation.id}</td>
@@ -1000,7 +1028,7 @@ class SystemAdmin {
                 <td class="py-3 px-4">
                     ${log.details ? `
                         <button class="view-details-btn text-blue-600 hover:text-blue-800 text-sm" data-details='${JSON.stringify(log.details)}'>
-                            View Details
+                            Details
                         </button>
                     ` : 'N/A'}
                 </td>

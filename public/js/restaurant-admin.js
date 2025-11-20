@@ -102,6 +102,25 @@ class RestaurantAdmin {
             this.previewVideo(e.target.files[0]);
         });
 
+        // Menu source toggle (editor vs file)
+        const menuSourceRadios = document.querySelectorAll('input[name="menu-source"]');
+        if (menuSourceRadios) {
+            menuSourceRadios.forEach(r => {
+                r.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    const editor = document.getElementById('menu-editor');
+                    const file = document.getElementById('menu-file');
+                    if (val === 'file') {
+                        if (editor) editor.classList.add('hidden');
+                        if (file) file.classList.remove('hidden');
+                    } else {
+                        if (editor) editor.classList.remove('hidden');
+                        if (file) file.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
         const removeVideoBtn = document.getElementById('remove-video');
         if (removeVideoBtn) {
             removeVideoBtn.addEventListener('click', () => {
@@ -143,9 +162,12 @@ class RestaurantAdmin {
             this.loadAvailability();
         });
 
-        document.getElementById('save-availability-btn').addEventListener('click', () => {
-            this.saveAvailability();
-        });
+        const saveAvailabilityBtn = document.getElementById('save-availability-btn');
+        if (saveAvailabilityBtn) {
+            saveAvailabilityBtn.addEventListener('click', () => {
+                this.saveAvailability();
+            });
+        }
 
         // Reservation filters
         document.getElementById('reservation-filter').addEventListener('change', () => {
@@ -662,10 +684,33 @@ class RestaurantAdmin {
         formData.append('contact_email', document.getElementById('restaurant-email').value);
         formData.append('opening_time', document.getElementById('restaurant-opening').value);
         formData.append('closing_time', document.getElementById('restaurant-closing').value);
+        // Try to include operating hours per day if present
+        try {
+            const days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+            const oh = {};
+            days.forEach(d => {
+                const openEl = document.getElementById(`hours-${d}-open`);
+                const closeEl = document.getElementById(`hours-${d}-close`);
+                const closedEl = document.getElementById(`hours-${d}-closed`);
+                if (openEl && closeEl && closedEl) {
+                    oh[d] = { open: openEl.value || '', close: closeEl.value || '', closed: !!closedEl.checked };
+                }
+            });
+            formData.append('operating_hours', JSON.stringify(oh));
+        } catch (e) {}
         formData.append('cuisine_type', document.getElementById('restaurant-cuisine').value);
         formData.append('price_range', document.getElementById('restaurant-price').value);
         formData.append('description', document.getElementById('restaurant-description').value);
         formData.append('tables_count', document.getElementById('restaurant-tables').value);
+        // Menu editor or PDF
+        try {
+            const menuVal = document.getElementById('restaurant-menu') ? document.getElementById('restaurant-menu').value : '';
+            if (menuVal) formData.append('menu', menuVal);
+            const menuFileEl = document.getElementById('restaurant-menu-file');
+            if (menuFileEl && menuFileEl.files && menuFileEl.files.length > 0) {
+                formData.append('menu_pdf', menuFileEl.files[0]);
+            }
+        } catch (e) {}
 
         // Handle multiple image uploads
         const imageFiles = document.getElementById('restaurant-images').files;
@@ -695,6 +740,29 @@ class RestaurantAdmin {
                 this.showNotification('Restaurant saved successfully', 'success');
                 this.closeRestaurantModal();
                 this.loadMyRestaurants();
+                // Also attempt to register the restaurant in the system-admin namespace so system admins can manage it
+                try {
+                    const created = await response.json();
+                    // build minimal payload for system-admin
+                    const sysPayload = {
+                        name: created.name || document.getElementById('restaurant-name').value,
+                        location: created.location || document.getElementById('restaurant-location').value,
+                        contact_email: created.contact_email || document.getElementById('restaurant-email').value,
+                        contact_phone: created.contact_phone || document.getElementById('restaurant-phone').value,
+                        cuisine_type: created.cuisine_type || document.getElementById('restaurant-cuisine').value,
+                        price_range: created.price_range || document.getElementById('restaurant-price').value,
+                        description: created.description || document.getElementById('restaurant-description').value,
+                        external_id: created.id || null
+                    };
+                    // best-effort POST; ignore failures
+                    await fetch('/api/system-admin/restaurants', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(sysPayload)
+                    });
+                } catch (e) {
+                    // ignore system-admin sync errors
+                }
             } else {
                 const error = await response.json();
                 this.showNotification(error.error, 'error');

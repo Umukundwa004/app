@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const editReservationModal = document.getElementById('edit-reservation-modal');
     const notificationsModal = document.getElementById('notifications-modal');
     const successModal = document.getElementById('success-modal');
+    const desktopNavLinks = document.querySelectorAll('.desktop-nav-link');
+    const notificationsBtnDesktop = document.getElementById('notifications-btn-desktop');
+    const notificationBadgeDesktop = document.getElementById('notification-badge-desktop');
+    const authLinkDesktop = document.getElementById('auth-link-desktop');
+    const authLinkIconDesktop = document.getElementById('auth-link-icon-desktop');
     
     let currentUser = null;
     let selectedRestaurantId = null;
@@ -29,11 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function initApp() {
         setupEventListeners();
         checkUserAuth();
-        const desktopNavLinks = document.querySelectorAll('.desktop-nav-link');
-        const notificationsBtnDesktop = document.getElementById('notifications-btn-desktop');
-        const notificationBadgeDesktop = document.getElementById('notification-badge-desktop');
-        const authLinkDesktop = document.getElementById('auth-link-desktop');
-        const authLinkIconDesktop = document.getElementById('auth-link-icon-desktop');
         loadFeaturedRestaurants();
         setupNavigation();
     }
@@ -356,7 +356,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Load restaurant images
             const imagesResponse = await fetch(`/api/restaurants/${restaurantId}/images`);
-            const images = await imagesResponse.json();
+            let images = await imagesResponse.json();
+            // Defensive: ensure images is an array
+            if (!Array.isArray(images)) {
+                console.error('Expected images array but received:', images);
+                images = [];
+            }
             
             // Populate restaurant info
             document.getElementById('details-restaurant-name').textContent = restaurant.name;
@@ -372,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Handle restaurant image (use primary or fallback to image_url)
             const headerImage = document.getElementById('restaurant-header-image');
-            const primaryImage = images.find(img => img.is_primary) || images[0];
+            const primaryImage = (images.find ? images.find(img => img.is_primary) : undefined) || images[0];
             
             if (primaryImage || restaurant.image_url) {
                 const imageUrl = primaryImage ? primaryImage.image_url : restaurant.image_url;

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bookly — Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Extend Tailwind theme for playground preview (CDN)
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#F5EFE7',
+            'brand-green': '#1F4E34',
+            'brand-green-dark': '#173E2A',
+            'accent-orange': '#E67A2B',
+            charcoal: '#1A1A1A',
+            muted: '#6B6B6B',
+          },
+          boxShadow: {
+            'card': '0 6px 18px rgba(31,78,52,0.08)',
+            'cta': '0 8px 24px rgba(31,78,52,0.12)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Small helper to ensure bottom nav spacing on browsers without safe-area env support */
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+  </style>
+</head>
+<body class="bg-[#F5EFE7] font-sans text-[#1A1A1A]">
+  <!-- Background shapes (non-interactive) -->
+  <div class="absolute inset-0 pointer-events-none -z-10">
+    <div class="absolute -top-10 -right-8 w-36 h-36 rounded-full bg-[#E67A2B] opacity-20 blur-lg"></div>
+    <svg class="absolute bottom-0 left-0 w-full h-28 opacity-20" viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F9E6D7" d="M0,192L48,176C96,160,192,128,288,122.7C384,117,480,139,576,133.3C672,128,768,96,864,80C960,64,1056,64,1152,90.7C1248,117,1344,171,1392,197.3L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"/>
+    </svg>
+  </div>
+
+  <main class="max-w-md mx-auto px-4 pt-6 pb-32 safe-bottom">
+    <header>
+      <h1 class="text-3xl font-bold">Bookly</h1>
+      <p class="mt-1 text-lg text-[#6B6B6B]">Reserve your table in seconds</p>
+    </header>
+
+    <div class="mt-4 flex items-center justify-between">
+      <div class="flex gap-3">
+        <button class="p-3 rounded-full bg-white shadow-md text-[#6B6B6B]" aria-label="Filter by cuisine">
+          <!-- placeholder icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v3a1 1 0 01-1 1H4A1 1 0 013 7V4z" /></svg>
+        </button>
+        <button class="p-3 rounded-full bg-white shadow-md text-[#6B6B6B]" aria-label="Sort">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+        </button>
+      </div>
+
+      <button class="bg-[#1F4E34] text-white rounded-full px-5 py-2.5 text-lg font-semibold shadow-cta hover:bg-[#173E2A] focus:outline-none focus:ring-2 focus:ring-[#1F4E34]/30" aria-label="Reserve table">
+        Reserve Table
+      </button>
+    </div>
+
+    <!-- Grid of restaurant cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+      <!-- Card 1 -->
+      <div class="rounded-xl overflow-hidden shadow-card bg-white">
+        <img src="https://images.unsplash.com/photo-1543352634-4d2e5f0717f6?auto=format&fit=crop&w=800&q=60" alt="Pasta dish" class="w-full h-28 object-cover" loading="lazy" />
+        <div class="p-3">
+          <p class="font-semibold text-[#1A1A1A]">La Trattoria</p>
+          <p class="mt-1 text-sm text-[#6B6B6B]">Italian • $$ • ⭐ 4.7</p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="rounded-xl overflow-hidden shadow-card bg-white">
+        <img src="https://images.unsplash.com/photo-1604908177522-5c3b60c38e2b?auto=format&fit=crop&w=800&q=60" alt="Salad bowl" class="w-full h-28 object-cover" loading="lazy" />
+        <div class="p-3">
+          <p class="font-semibold text-[#1A1A1A]">Green & Co.</p>
+          <p class="mt-1 text-sm text-[#6B6B6B]">Salads • $ • ⭐ 4.5</p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="rounded-xl overflow-hidden shadow-card bg-white">
+        <img src="https://images.unsplash.com/photo-1555992336-03a23c2f7d33?auto=format&fit=crop&w=800&q=60" alt="Grill plate" class="w-full h-28 object-cover" loading="lazy" />
+        <div class="p-3">
+          <p class="font-semibold text-[#1A1A1A]">Ember Grill</p>
+          <p class="mt-1 text-sm text-[#6B6B6B]">Steak • $$$ • ⭐ 4.8</p>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="rounded-xl overflow-hidden shadow-card bg-white">
+        <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=60" alt="Sushi set" class="w-full h-28 object-cover" loading="lazy" />
+        <div class="p-3">
+          <p class="font-semibold text-[#1A1A1A]">Sora Sushi</p>
+          <p class="mt-1 text-sm text-[#6B6B6B]">Japanese • $$$ • ⭐ 4.6</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-xl py-3 flex justify-around z-50 safe-bottom">
+    <a href="#" class="flex flex-col items-center text-[#1F4E34]" aria-current="page">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a1 1 0 01-1 1h-5a1 1 0 01-1-1V12H9v8a1 1 0 01-1 1H3a1 1 0 01-1-1z"/></svg>
+      <span class="text-xs mt-1">Home</span>
+    </a>
+
+    <a href="#" class="flex flex-col items-center text-[#6B6B6B]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <span class="text-xs mt-1">Search</span>
+    </a>
+
+    <a href="#" class="flex flex-col items-center text-[#6B6B6B]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A9 9 0 1118.88 6.196 9 9 0 015.12 17.804z"/></svg>
+      <span class="text-xs mt-1">Profile</span>
+    </a>
+  </nav>
+</body>
+</html>

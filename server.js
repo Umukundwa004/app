@@ -59,14 +59,38 @@ const upload = multer({
 });
 
 // Email configuration (for demo - in production use real SMTP)
-const emailTransporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    auth: {
-        user: 'your-email@ethereal.email',
-        pass: 'your-password'
+let emailTransporter;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    // Use provided SMTP credentials (e.g., Gmail app password)
+    emailTransporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+} else {
+    // Fallback to ethereal-like logging transporter for development
+    emailTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        auth: {
+            user: process.env.ETHEREAL_USER || 'your-email@ethereal.email',
+            pass: process.env.ETHEREAL_PASS || 'your-password'
+        }
+    });
+}
+
+// Verify email transporter when possible and log result
+if (emailTransporter) {
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        emailTransporter.verify()
+            .then(() => console.log('Email transporter verified and ready to send messages.'))
+            .catch(err => console.error('Email transporter verification failed:', err));
+    } else {
+        console.log('Email transporter configured for development/fallback mode. Set EMAIL_USER and EMAIL_PASS to enable real SMTP.');
     }
-});
+}
 
 // Middleware
 app.use(express.json());
@@ -157,18 +181,15 @@ class NotificationService {
             // In production, this would send real emails
             console.log(`[EMAIL] To: ${to}, Subject: ${subject}`);
             console.log(`[EMAIL CONTENT] ${html}`);
-            
-            // For demo purposes, we'll just log the email
-            // Uncomment below to send real emails in production
-            /*
+
+            // Attempt to send using configured transporter
             await emailTransporter.sendMail({
-                from: '"Rwanda Eats Reserve" <noreply@rwandaeats.com>',
+                from: process.env.EMAIL_FROM || `"Rwanda Eats Reserve" <${process.env.EMAIL_USER || 'noreply@rwandaeats.com'}>`,
                 to: to,
                 subject: subject,
                 html: html
             });
-            */
-            
+
             return true;
         } catch (error) {
             console.error('Email sending error:', error);
@@ -339,11 +360,12 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash password
         const passwordHash = await hashPassword(password);
         const verificationToken = generateToken();
+        const verificationTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Create user
+        // Create user (store verification token and expiry)
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password_hash, phone, user_type, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, email, passwordHash, phone, user_type, verificationToken]
+            'INSERT INTO users (name, email, password_hash, phone, user_type, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [name, email, passwordHash, phone, user_type, verificationToken, verificationTokenExpires]
         );
 
         const userId = result.insertId;
@@ -464,7 +486,7 @@ app.post('/api/auth/verify-email', async (req, res) => {
         }
 
         const [users] = await db.execute(
-            'SELECT id, name, email FROM users WHERE verification_token = ? AND email_verified = FALSE',
+            'SELECT id, name, email FROM users WHERE verification_token = ? AND email_verified = FALSE AND verification_token_expires > NOW()',
             [token]
         );
 
@@ -474,9 +496,9 @@ app.post('/api/auth/verify-email', async (req, res) => {
 
         const user = users[0];
 
-        // Verify email
+        // Verify email and clear token + expiry
         await db.execute(
-            'UPDATE users SET email_verified = TRUE, verification_token = NULL WHERE id = ?',
+            'UPDATE users SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL WHERE id = ?',
             [user.id]
         );
 
@@ -512,19 +534,30 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         
         if (users.length > 0) {
             const user = users[0];
-            // Generate 6-digit verification code
+            // Generate 6-digit verification code and store only its hash
             const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
             const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+            const resetTokenHash = crypto.createHash('sha256').update(verificationCode).digest('hex');
 
             await db.execute(
                 'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-                [verificationCode, resetTokenExpires, user.id]
+                [resetTokenHash, resetTokenExpires, user.id]
             );
 
-            // Send verification code email
-            console.log(`[EMAIL] To: ${user.email}, Subject: Password Reset Verification Code`);
-            console.log(`[EMAIL CONTENT] Your verification code is: ${verificationCode}`);
-            console.log(`This code will expire in 15 minutes.`);
+            // Send verification code email using NotificationService
+            const subject = 'Password Reset Verification Code';
+            const html = `
+                <h2>Password Reset Request</h2>
+                <p>Your password reset code is: <strong>${verificationCode}</strong></p>
+                <p>This code will expire in 15 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            `;
+
+            try {
+                await NotificationService.sendEmail(user.email, subject, html);
+            } catch (e) {
+                console.error('Error sending reset email:', e);
+            }
 
             // Log the action
             await AuditLogService.logAction(user.id, 'PASSWORD_RESET_REQUEST', 'user', user.id, {}, req);
@@ -549,9 +582,10 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
             return res.status(400).json({ error: 'Email and code are required' });
         }
 
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
         const [users] = await db.execute(
             'SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expires > NOW()',
-            [email, code]
+            [email, codeHash]
         );
 
         if (users.length === 0) {
@@ -574,9 +608,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
             return res.status(400).json({ error: 'Email, code and new password are required' });
         }
 
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
         const [users] = await db.execute(
             'SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expires > NOW()',
-            [email, code]
+            [email, codeHash]
         );
 
         if (users.length === 0) {
@@ -1105,6 +1140,34 @@ setInterval(async () => {
         console.error('Error sending reminders:', error);
     }
 }, 60 * 60 * 1000); // Run every hour
+// Debug route to send a test email from the running server
+// Protect this endpoint in production by setting `DEBUG_EMAIL_SECRET`
+app.post('/api/debug/send-test-email', async (req, res) => {
+    try {
+        // Optional guard: require header when DEBUG_EMAIL_SECRET is set
+        if (process.env.DEBUG_EMAIL_SECRET) {
+            const provided = req.headers['x-debug-secret'] || req.body?.debug_secret;
+            if (!provided || provided !== process.env.DEBUG_EMAIL_SECRET) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+        }
+
+        const { to, subject, html } = req.body || {};
+        const recipient = to || process.env.EMAIL_TEST_TO || 'your-test-recipient@example.com';
+        const mailSubject = subject || 'Test Email from Rwanda Eats Reserve';
+        const mailHtml = html || `<p>This is a test email sent at ${new Date().toISOString()}</p>`;
+
+        const ok = await NotificationService.sendEmail(recipient, mailSubject, mailHtml);
+        if (ok) {
+            return res.json({ message: 'Test email sent', to: recipient });
+        } else {
+            return res.status(500).json({ error: 'Failed to send test email' });
+        }
+    } catch (err) {
+        console.error('Test email error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
@@ -1448,8 +1511,9 @@ app.get('/api/restaurants/:id/images', async (req, res) => {
         );
         res.json(images);
     } catch (error) {
-        console.error('Error loading restaurant images:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error loading restaurant images:', error && error.stack ? error.stack : error);
+        // Return empty array so clients expecting an array don't break the UI
+        res.json([]);
     }
 });
 

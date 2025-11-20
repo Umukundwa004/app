@@ -28,6 +28,7 @@ CREATE TABLE users (
     email_verified BOOLEAN DEFAULT FALSE,
     phone_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(100),
+    verification_token_expires DATETIME,
     reset_token VARCHAR(100),
     reset_token_expires DATETIME,
     last_login DATETIME,
