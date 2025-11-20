@@ -229,6 +229,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 link.classList.remove('text-brown-400');
             }
         });
+
+        // Update desktop nav active states so big-screen nav reflects current section
+        if (typeof desktopNavLinks !== 'undefined' && desktopNavLinks.length) {
+            desktopNavLinks.forEach(link => {
+                link.classList.remove('text-brown-800', 'font-bold');
+                link.classList.add('text-brown-600');
+                if (link.getAttribute('data-section') === sectionName) {
+                    link.classList.add('text-brown-800', 'font-bold');
+                    link.classList.remove('text-brown-600');
+                }
+            });
+        }
     }
     
     // Restaurant Discovery Functions (FR 1, FR 1.1, FR 1.2)
@@ -515,7 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function createReservation(e) {
         e.preventDefault();
-        
+
         const formData = {
             customer_name: document.getElementById('customer-name').value,
             customer_email: document.getElementById('customer-email').value,
@@ -523,31 +535,26 @@ document.addEventListener('DOMContentLoaded', function() {
             restaurant_id: selectedRestaurantId,
             reservation_date: document.getElementById('reservation-date').value,
             reservation_time: document.getElementById('reservation-time').value,
-            party_size: document.getElementById('party-size').value,
-            occasion: document.getElementById('occasion').value,
-            special_requests: document.getElementById('special-requests').value
+            party_size: document.getElementById('reservation-party-size').value || 1,
+            occasion: document.getElementById('reservation-occasion') ? document.getElementById('reservation-occasion').value : null,
+            special_requests: document.getElementById('reservation-requests') ? document.getElementById('reservation-requests').value : null
         };
-        
+
         fetch('/api/reservations', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showSuccess('Error', data.error, false);
-            } else {
-                reservationModal.classList.add('hidden');
-                showSuccess('Reservation Submitted', 'Your reservation request has been received. The restaurant will confirm your booking shortly.');
-                
-                // Refresh notifications if user is logged in
-                if (currentUser) {
-                    checkUserAuth();
-                }
+        .then(response => response.json().then(body => ({ status: response.status, body })))
+        .then(({ status, body }) => {
+            if (status >= 400) {
+                showSuccess('Error', body.error || 'Failed to create reservation', false);
+                return;
             }
+
+            reservationModal.classList.add('hidden');
+            showSuccess('Reservation Created', 'Your reservation has been created successfully.');
+            loadReservations('upcoming');
         })
         .catch(error => {
             console.error('Error creating reservation:', error);
@@ -673,23 +680,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Profile Functions (FR 3, FR 3.1, FR 3.2)
     function loadProfile() {
         if (!currentUser) return;
-        
-        fetch('/api/user/profile')
-            .then(response => response.json())
-            .then(profile => {
-                document.getElementById('profile-name').textContent = profile.name;
-                document.getElementById('profile-email').textContent = profile.email;
-                document.getElementById('profile-phone').textContent = profile.phone || 'Not provided';
-                document.getElementById('profile-joined').textContent = new Date(profile.created_at).toLocaleDateString();
-                
-                // Set form values
-                document.getElementById('edit-name').value = profile.name;
-                document.getElementById('edit-email').value = profile.email;
-                document.getElementById('edit-phone').value = profile.phone || '';
-            })
-            .catch(error => {
-                console.error('Error loading profile:', error);
-            });
+        // Prefer session user (currentUser) for immediate display, fall back to server profile
+        try {
+            const profilePromise = fetch('/api/user/profile').then(r => r.json()).catch(() => null);
+
+            // Use currentUser values to populate UI immediately
+            document.getElementById('profile-name').textContent = currentUser.name || '—';
+            document.getElementById('profile-email').textContent = currentUser.email || '—';
+            document.getElementById('profile-phone').textContent = currentUser.phone || 'Not provided';
+            document.getElementById('profile-joined').textContent = 'Loading...';
+
+            // Set form values from session user
+            document.getElementById('edit-name').value = currentUser.name || '';
+            document.getElementById('edit-email').value = currentUser.email || '';
+            document.getElementById('edit-phone').value = currentUser.phone || '';
+
+            // Update with freshest server profile when available (created_at etc.)
+            profilePromise.then(profile => {
+                if (!profile) return;
+                document.getElementById('profile-name').textContent = profile.name || currentUser.name || '—';
+                document.getElementById('profile-email').textContent = profile.email || currentUser.email || '—';
+                document.getElementById('profile-phone').textContent = profile.phone || currentUser.phone || 'Not provided';
+                if (profile.created_at) {
+                    document.getElementById('profile-joined').textContent = new Date(profile.created_at).toLocaleDateString();
+                }
+
+                // Ensure form values reflect server state
+                document.getElementById('edit-name').value = profile.name || currentUser.name || '';
+                document.getElementById('edit-email').value = profile.email || currentUser.email || '';
+                document.getElementById('edit-phone').value = profile.phone || currentUser.phone || '';
+            }).catch(error => console.error('Error loading profile:', error));
+        } catch (error) {
+            console.error('Error preparing profile UI:', error);
+        }
         
         // Load statistics
         fetch('/api/user/reservation-stats')
@@ -989,6 +1012,38 @@ document.addEventListener('DOMContentLoaded', function() {
             default: return status;
         }
     }
+
+    // Email change modal controls (attach once)
+    (function attachEmailChangeControls(){
+        const emailChangeModal = document.getElementById('email-change-modal');
+        if (!emailChangeModal) return;
+
+        document.getElementById('close-email-change').addEventListener('click', () => emailChangeModal.classList.add('hidden'));
+        document.getElementById('cancel-email-change').addEventListener('click', () => emailChangeModal.classList.add('hidden'));
+        document.getElementById('confirm-email-change').addEventListener('click', async () => {
+            const code = document.getElementById('email-change-code').value.trim();
+            if (!code) { showSuccess('Error', 'Enter verification code', false); return; }
+
+            try {
+                const resp = await fetch('/api/user/confirm-email-change', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await resp.json();
+                if (!resp.ok) return showSuccess('Error', data.error || 'Invalid code', false);
+
+                // Update UI and session user
+                if (currentUser) currentUser.email = data.email || currentUser.email;
+                document.getElementById('profile-email').textContent = data.email || document.getElementById('profile-email').textContent;
+                emailChangeModal.classList.add('hidden');
+                showSuccess('Email Updated', 'Your email has been updated successfully.');
+            } catch (err) {
+                console.error('Error confirming email change:', err);
+                showSuccess('Error', 'Failed to confirm email change', false);
+            }
+        });
+    })();
 
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');

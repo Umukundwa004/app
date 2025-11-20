@@ -108,12 +108,12 @@ app.use(session({
 // IMPORTANT: Update the password to match your MySQL root password
 // Common defaults: '' (empty), 'root', 'password', or your custom password
 const db = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || 'vestine004', // ← set DB_PASSWORD env var or update this default
     database: process.env.DB_NAME || 'rwanda_eats_reserve',
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: parseInt(process.env.DB_CONN_LIMIT, 10) || 10,
     queueLimit: 0
 });
 
@@ -692,6 +692,21 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
             return res.status(409).json({ error: 'Email is already in use' });
         }
 
+        // If email changed, do not update email directly — require verification flow
+        const [rows] = await db.execute('SELECT email FROM users WHERE id = ?', [userId]);
+        const currentEmail = rows.length ? rows[0].email : null;
+
+        if (email && currentEmail && email.toLowerCase() !== currentEmail.toLowerCase()) {
+            // Update name and phone now, but initiate email-change verification separately
+            await db.execute(
+                'UPDATE users SET name = ?, phone = ?, updated_at = NOW() WHERE id = ?',
+                [name, phone || null, userId]
+            );
+
+            return res.status(202).json({ message: 'Name/phone updated. Email change requires verification via request-email-change endpoint.' });
+        }
+
+        // No email change: update all fields
         await db.execute(
             'UPDATE users SET name = ?, email = ?, phone = ?, updated_at = NOW() WHERE id = ?',
             [name, email, phone || null, userId]
@@ -1169,11 +1184,36 @@ app.post('/api/debug/send-test-email', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Customer interface: http://localhost:${PORT}`);
-    console.log(`Admin login: http://localhost:${PORT}/login`);
-});
+// Remove immediate listen; start server after verifying DB + email transporter
+// Startup routine: verify DB connection and email transporter, then start listening
+(async function startServer() {
+    try {
+        // Test DB connection
+        await db.execute('SELECT 1');
+        console.log('Database connection OK');
+    } catch (err) {
+        console.error('Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
+        console.error(err);
+        process.exit(1);
+    }
+
+    // Verify email transporter optionally (if SMTP configured)
+    if (emailTransporter && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        try {
+            await emailTransporter.verify();
+            console.log('Email transporter verified and ready');
+        } catch (e) {
+            console.warn('Email transporter verification failed. Emails may not be sent.');
+            console.warn(e.message || e);
+        }
+    }
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Customer interface: http://localhost:${PORT}`);
+        console.log(`Admin login: http://localhost:${PORT}/login`);
+    });
+})();
 // Add this route to serve the registration page
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'register.html'));
@@ -2377,6 +2417,149 @@ app.put('/api/system-admin/users/:id/password', requireSystemAdmin, async (req, 
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
         console.error('Error resetting user password:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Request email change - sends verification code to new email
+app.post('/api/user/request-email-change', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const { newEmail } = req.body || {};
+        if (!newEmail) return res.status(400).json({ error: 'New email is required' });
+
+        // ensure new email is not already taken
+        const [existing] = await db.execute('SELECT id FROM users WHERE email = ? AND id <> ?', [newEmail, userId]);
+        if (existing.length > 0) return res.status(409).json({ error: 'Email is already in use' });
+
+        // generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const tokenHash = crypto.createHash('sha256').update(code).digest('hex');
+        const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // store pending email and hashed token
+        await db.execute('UPDATE users SET pending_email = ?, pending_email_token = ?, pending_email_expires = ? WHERE id = ?', [newEmail, tokenHash, expires, userId]);
+
+        // send verification code to new email
+        const subject = 'Confirm your new email for Rwanda Eats Reserve';
+        const html = `
+            <h2>Confirm Email Change</h2>
+            <p>Use this verification code to confirm your new email address: <strong>${code}</strong></p>
+            <p>This code expires in 15 minutes.</p>
+        `;
+
+        try { await NotificationService.sendEmail(newEmail, subject, html); } catch (e) { console.error('Error sending email change code:', e); }
+
+        res.json({ message: 'Verification code sent to new email' });
+    } catch (error) {
+        console.error('Error requesting email change:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Confirm email change with code
+app.post('/api/user/confirm-email-change', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const { code } = req.body || {};
+        if (!code) return res.status(400).json({ error: 'Verification code is required' });
+
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+        const [rows] = await db.execute('SELECT pending_email FROM users WHERE id = ? AND pending_email_token = ? AND pending_email_expires > NOW()', [userId, codeHash]);
+        if (rows.length === 0) return res.status(400).json({ error: 'Invalid or expired verification code' });
+
+        const pendingEmail = rows[0].pending_email;
+
+        // update email and clear pending fields
+        await db.execute('UPDATE users SET email = ?, pending_email = NULL, pending_email_token = NULL, pending_email_expires = NULL, updated_at = NOW() WHERE id = ?', [pendingEmail, userId]);
+
+        // update session
+        req.session.user.email = pendingEmail;
+
+        res.json({ message: 'Email updated successfully', email: pendingEmail });
+    } catch (error) {
+        console.error('Error confirming email change:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Cancel a reservation (customer or restaurant admin)
+app.put('/api/reservations/:id/cancel', requireAuth, async (req, res) => {
+    try {
+        const reservationId = req.params.id;
+        const user = req.session.user;
+
+        // Load reservation
+        const [rows] = await db.execute('SELECT * FROM reservations WHERE id = ?', [reservationId]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+
+        const reservation = rows[0];
+
+        // Authorization: customers can cancel their own reservations; restaurant admins can cancel for their restaurants
+        if (user.user_type === 'customer') {
+            if (reservation.customer_id !== user.id) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type === 'restaurant_admin') {
+            const [rest] = await db.execute('SELECT restaurant_admin_id FROM restaurants WHERE id = ?', [reservation.restaurant_id]);
+            if (rest.length === 0 || rest[0].restaurant_admin_id !== user.id) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            // Other user types not allowed
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+
+        // Disallow cancelling completed reservations
+        if (reservation.status === 'completed') {
+            return res.status(400).json({ error: 'Cannot cancel a completed reservation' });
+        }
+
+        if (reservation.status === 'cancelled') {
+            return res.status(400).json({ error: 'Reservation already cancelled' });
+        }
+
+        // Update status
+        await db.execute('UPDATE reservations SET status = ? WHERE id = ?', ['cancelled', reservationId]);
+
+        // Notify customer
+        const [customerRows] = await db.execute('SELECT id, name, email, phone FROM users WHERE id = ?', [reservation.customer_id]);
+        const customer = customerRows.length ? customerRows[0] : null;
+
+        const [restaurantRows] = await db.execute('SELECT id, name, restaurant_admin_id, location FROM restaurants WHERE id = ?', [reservation.restaurant_id]);
+        const restaurant = restaurantRows.length ? restaurantRows[0] : null;
+
+        if (customer) {
+            await NotificationService.createNotification(
+                customer.id,
+                'Reservation Cancelled',
+                `Your reservation at ${restaurant ? restaurant.name : 'the restaurant'} for ${reservation.reservation_date} ${reservation.reservation_time} has been cancelled.`,
+                'reservation_status',
+                'in_app',
+                reservationId
+            );
+        }
+
+        // Notify restaurant admin
+        if (restaurant && restaurant.restaurant_admin_id) {
+            await NotificationService.createNotification(
+                restaurant.restaurant_admin_id,
+                'Reservation Cancelled',
+                `Reservation for ${customer ? customer.name : 'a customer'} at ${restaurant.name} on ${reservation.reservation_date} ${reservation.reservation_time} was cancelled.`,
+                'reservation_status',
+                'in_app',
+                reservationId
+            );
+        }
+
+        // Audit log
+        await AuditLogService.logAction(user.id, 'RESERVATION_CANCELLED', 'reservation', reservationId, {}, req);
+
+        res.json({ message: 'Reservation cancelled successfully' });
+    } catch (error) {
+        console.error('Error cancelling reservation:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

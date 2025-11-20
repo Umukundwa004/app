@@ -40,24 +40,24 @@
 <body class="bg-cream-50 overflow-x-hidden">
   <!-- Desktop Navigation Bar (visible on md and up) -->
   <nav class="hidden md:flex fixed top-0 left-0 right-0 bg-white border-b border-brown-200 shadow-lg z-40">
-    <div class="container mx-auto flex justify-between items-center px-6 py-3">
-      <div class="flex items-center gap-2">
-        <img src="/views/images/logo.jpeg" alt="Logo" class="h-8 w-8 rounded-lg object-cover" />
-        <span class="font-bold text-brown-800 text-lg">Rwanda Eats Reserve</span>
+    <div class="container mx-auto flex justify-between items-center px-6 py-4">
+      <div class="flex items-center gap-3">
+        <img src="/views/images/logo.jpeg" alt="Logo" class="h-10 w-10 rounded-lg object-cover" />
+        <span class="font-bold text-brown-800 text-lg md:text-xl">Rwanda Eats Reserve</span>
       </div>
-      <div class="flex gap-8">
-        <a href="#home" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="home"><i class="fas fa-home mr-2"></i>Home</a>
-        <a href="#restaurants" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="restaurants"><i class="fas fa-search mr-2"></i>Discover</a>
-        <a href="#reservations" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="reservations"><i class="fas fa-calendar-alt mr-2"></i>Bookings</a>
-        <a href="#profile" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium" data-section="profile"><i class="fas fa-user mr-2"></i>Profile</a>
+      <div class="flex gap-12 items-center">
+        <a href="#home" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium flex items-center gap-3" data-section="home"><i class="fas fa-home text-lg"></i><span class="hidden md:inline">Home</span></a>
+        <a href="#restaurants" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium flex items-center gap-3" data-section="restaurants"><i class="fas fa-search text-lg"></i><span class="hidden md:inline">Discover</span></a>
+        <a href="#reservations" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium flex items-center gap-3" data-section="reservations"><i class="fas fa-calendar-alt text-lg"></i><span class="hidden md:inline">Bookings</span></a>
+        <a href="#profile" class="desktop-nav-link text-brown-600 hover:text-brown-800 font-medium flex items-center gap-3" data-section="profile"><i class="fas fa-user text-lg"></i><span class="hidden md:inline">Profile</span></a>
       </div>
-      <div class="flex items-center gap-4">
-        <button id="notifications-btn-desktop" class="text-brown-400 hover:text-brown-700 transition relative">
-          <i class="fas fa-bell text-lg"></i>
+      <div class="flex items-center gap-6">
+        <button id="notifications-btn-desktop" class="text-brown-400 hover:text-brown-700 transition relative px-2 py-1">
+          <i class="fas fa-bell text-lg md:text-xl"></i>
           <span id="notification-badge-desktop" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center hidden">0</span>
         </button>
-        <a id="auth-link-desktop" href="/login" class="text-brown-400 hover:text-brown-700 transition">
-          <i id="auth-link-icon-desktop" class="fas fa-sign-in-alt text-lg"></i>
+        <a id="auth-link-desktop" href="/login" class="text-brown-400 hover:text-brown-700 transition px-2 py-1">
+          <i id="auth-link-icon-desktop" class="fas fa-sign-in-alt text-lg md:text-xl"></i>
         </a>
       </div>
     </div>
@@ -70,7 +70,7 @@
           <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-8 w-8 md:h-10 md:w-10 rounded-lg object-cover mr-2 md:mr-3" />
           <h1 class="text-base md:text-lg font-bold">Rwanda Eats Reserve</h1>
         </div>
-        <div class="flex items-center space-x-2 md:space-x-3">
+        <div class="flex items-center space-x-3 md:space-x-4">
           <button id="notifications-btn" class="text-brown-200 hover:text-white transition relative">
             <i class="fas fa-bell text-base md:text-lg"></i>
             <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center hidden">0</span>
@@ -286,9 +286,32 @@
                   <button type="button" id="cancel-edit-btn" class="px-4 py-2 text-brown-600 hover:text-brown-800 border border-brown-300 rounded-lg">
                     Cancel
                   </button>
-                  <!-- Save Changes button removed -->
+                  <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
+                    Save Changes
+                  </button>
                 </div>
               </form>
+            </div>
+
+            <!-- Email Change Confirmation Modal -->
+            <div id="email-change-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+              <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="text-xl font-bold text-brown-800">Confirm Email Change</h3>
+                  <button id="close-email-change" class="text-brown-500 hover:text-brown-700">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <p class="text-brown-600 mb-4">A verification code was sent to your new email. Enter it below to confirm the change.</p>
+                <div class="mb-4">
+                  <label class="block text-brown-700 mb-2 font-medium" for="email-change-code">Verification Code</label>
+                  <input type="text" id="email-change-code" maxlength="6" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" placeholder="000000">
+                </div>
+                <div class="flex justify-end">
+                  <button id="cancel-email-change" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800">Cancel</button>
+                  <button id="confirm-email-change" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Confirm Email</button>
+                </div>
+              </div>
             </div>
                         
             <!-- Statistics -->
