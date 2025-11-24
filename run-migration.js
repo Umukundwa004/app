@@ -2,7 +2,7 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config/config');
+const config = require('./config');
 
 async function runMigration() {
     let connection;
@@ -13,7 +13,7 @@ async function runMigration() {
         console.log('Connected to database');
         
         // Read migration file
-        const migrationPath = path.join(__dirname, 'migrations', 'migration-restaurant-images.sql');
+        const migrationPath = path.join(__dirname, 'migration-restaurant-images.sql');
         const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
         
         // Split by semicolon and execute each statement

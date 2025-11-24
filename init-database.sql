@@ -170,9 +170,78 @@ CREATE TABLE email_templates (
 );
 
 -- SMS templates table
+CREATE TABLE sms_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    message TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Table availability
+CREATE TABLE table_availability (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_id INT,
+    date DATE NOT NULL,
+    time_slot TIME NOT NULL,
+    available_tables INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_slot (restaurant_id, date, time_slot)
+);
+
+-- Insert sample users (passwords are hashed versions of simple passwords)
+-- System Admin: admin@rwandaeats.com / admin123
+-- Restaurant Admin: admin@millecollines.rw / restaurant123  
+-- Customer: john@example.com / customer123
+
+INSERT INTO users (name, email, password_hash, phone, user_type, email_verified) VALUES
+('System Admin', 'admin@rwandaeats.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000001', 'system_admin', TRUE),
+('Hotel des Mille Collines', 'admin@millecollines.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000002', 'restaurant_admin', TRUE),
+('Heaven Restaurant', 'admin@heaven.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000003', 'restaurant_admin', TRUE),
+('The Hut', 'admin@thehut.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000004', 'restaurant_admin', TRUE),
+('John Doe', 'john@example.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000005', 'customer', TRUE),
+('Jane Smith', 'jane@example.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000006', 'customer', TRUE);
+
+-- Insert sample restaurants
+INSERT INTO restaurants (name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, is_active) VALUES
+('Hotel des Mille Collines', 'Iconic hotel with exceptional dining experience overlooking Kigali', 'Kigali City Center', '+250788111111', 'reservations@millecollines.rw', '06:00:00', '22:00:00', 'International', '3', 20, 2, TRUE),
+('Heaven Restaurant', 'Rooftop dining with panoramic views and fusion cuisine', 'Kiyovu, Kigali', '+250788222222', 'info@heaven.rw', '11:00:00', '23:00:00', 'Fusion', '3', 15, 3, TRUE),
+('The Hut', 'Traditional Rwandan cuisine in a cozy atmosphere', 'Remera, Kigali', '+250788333333', 'bookings@thehut.rw', '10:00:00', '21:00:00', 'Rwandan', '2', 12, 4, TRUE),
+('Repub Lounge', 'Modern lounge with international dishes and live music', 'Kimihurura, Kigali', '+250788444444', 'contact@republounge.rw', '12:00:00', '23:30:00', 'International', '2', 18, 2, TRUE),
+('Khana Khazana', 'Authentic Indian cuisine in the heart of Kigali', 'Nyarutarama, Kigali', '+250788555555', 'info@khana.rw', '11:30:00', '22:00:00', 'Indian', '2', 10, 3, TRUE);
+
+-- Insert sample menu items
+INSERT INTO menu_items (restaurant_id, name, description, price, category, is_available) VALUES
+(1, 'Grilled Tilapia', 'Fresh lake tilapia with herbs and spices', 18000, 'Main Course', TRUE),
+(1, 'Beef Brochette', 'Grilled beef skewers with vegetables', 15000, 'Main Course', TRUE),
+(1, 'Caesar Salad', 'Classic Caesar with grilled chicken', 12000, 'Appetizer', TRUE),
+(2, 'Goat Cheese Salad', 'Fresh greens with warm goat cheese', 14000, 'Appetizer', TRUE),
+(2, 'Lamb Chops', 'Grilled lamb with rosemary and garlic', 25000, 'Main Course', TRUE),
+(2, 'Vegetable Curry', 'Mixed vegetables in coconut curry sauce', 16000, 'Main Course', TRUE),
+(3, 'Ugali with Fish', 'Traditional Rwandan meal with grilled fish', 10000, 'Main Course', TRUE),
+(3, 'Isombe', 'Cassava leaves with peanut sauce', 8000, 'Main Course', TRUE),
+(3, 'Brochette Mix', 'Assorted meat skewers', 12000, 'Main Course', TRUE),
+(4, 'Pizza Margherita', 'Classic Italian pizza with fresh basil', 15000, 'Main Course', TRUE),
+(4, 'Chicken Wings', 'Spicy Buffalo wings with ranch', 10000, 'Appetizer', TRUE),
+(5, 'Butter Chicken', 'Creamy tomato-based chicken curry', 18000, 'Main Course', TRUE),
+(5, 'Paneer Tikka', 'Grilled cottage cheese with spices', 14000, 'Appetizer', TRUE),
+(5, 'Biryani', 'Fragrant rice with mixed vegetables or chicken', 16000, 'Main Course', TRUE);
+
+-- Insert email templates
+INSERT INTO email_templates (name, subject, body, is_active) VALUES
+('welcome', 'Welcome to Rwanda Eats Reserve!', 
+ '<h1>Welcome {{name}}!</h1><p>Thank you for joining Rwanda Eats Reserve. Please verify your email by clicking the link below:</p><p><a href="{{verification_url}}">Verify Email</a></p>', 
+ TRUE),
+('reservation_confirmation', 'Your Reservation is Confirmed!', 
+ '<h1>Reservation Confirmed</h1><p>Dear {{customer_name}},</p><p>Your reservation at <strong>{{restaurant_name}}</strong> has been confirmed!</p><p><strong>Date:</strong> {{reservation_date}}<br><strong>Time:</strong> {{reservation_time}}<br><strong>Party Size:</strong> {{party_size}}</p><p>We look forward to seeing you!</p>', 
+ TRUE);
+
+-- Insert SMS templates
 INSERT INTO sms_templates (name, message, is_active) VALUES
 ('reservation_confirmation_sms', 
- 'Your reservation at {{restaurant_name}} is confirmed for {{reservation_date}} at {{reservation_time}} for {{party_size}} people. See you soon!',
+ 'Your reservation at {{restaurant_name}} is confirmed for {{reservation_date}} at {{reservation_time}} for {{party_size}} people. See you soon!', 
  TRUE);
 
 -- Success message

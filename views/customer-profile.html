@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Delivery App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/1.0.0/lucide.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Mobile navigation styles */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 80px;
+            }
+        }
+        
+        /* Desktop navigation styles */
+        @media (min-width: 769px) {
+            body {
+                margin-left: 80px;
+            }
+        }
+        
+        /* Navigation hover effects */
+        .nav-item:hover {
+            transform: translateY(-1px);
+            transition: transform 0.2s ease;
+        }
+        
+        /* Safe area support for mobile devices */
+        .safe-area-inset-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-40 bg-white border-b border-gray-200">
+        <div class="max-w-screen-xl mx-auto px-4 py-4 flex items-center gap-4">
+            <button id="backBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </button>
+            <h1 class="text-xl font-semibold">My Profile</h1>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-screen-xl mx-auto px-4 py-6 space-y-6 pb-20 md:pb-6 md:ml-20">
+        <!-- Profile Information Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold">Personal Information</h2>
+                </div>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Profile Edit Form -->
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label for="editName" class="text-sm font-medium text-brown-700">Full Name</label>
+                        <input type="text" id="editName" class="w-full px-3 py-2 border border-brown-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="editEmail" class="text-sm font-medium text-brown-700">Email</label>
+                        <input type="email" id="editEmail" class="w-full px-3 py-2 border border-brown-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="editPhone" class="text-sm font-medium text-brown-700">Phone</label>
+                        <input type="tel" id="editPhone" class="w-full px-3 py-2 border border-brown-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-brown-700">Member Since</label>
+                        <p id="displayMemberSince" class="text-sm text-brown-600 bg-brown-50 px-3 py-2 rounded-md">Loading...</p>
+                    </div>
+
+                    <div class="pt-4">
+                        <button id="saveBtn" class="w-full px-4 py-2 bg-brown-600 text-white rounded-md hover:bg-brown-700 transition-colors">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dining Statistics Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-brown-800">Your Dining Statistics</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-brown-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-brown-600" id="total-reservations-count">0</div>
+                        <div class="text-brown-500 text-sm">Total Reservations</div>
+                    </div>
+                    <div class="bg-brown-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-brown-600" id="upcoming-reservations-count">0</div>
+                        <div class="text-brown-500 text-sm">Upcoming</div>
+                    </div>
+                    <div class="bg-brown-50 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-brown-600" id="favorite-restaurants-count">0</div>
+                        <div class="text-brown-500 text-sm">Restaurants Visited</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Actions Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold">Account Actions</h2>
+            </div>
+            <div class="p-6">
+                <button id="signOutBtn" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation (visible only on mobile) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brown-200 shadow-lg z-40 safe-area-inset-bottom">
+        <div class="flex justify-around items-center px-2 py-3">
+            <div class="nav-item flex flex-col items-center px-3 py-2 text-brown-400 hover:text-brown-600 cursor-pointer transition-colors duration-200" onclick="goToHome()">
+                <i class="fas fa-home text-xl mb-1"></i>
+                <span class="text-xs font-medium">Home</span>
+            </div>
+            <div class="nav-item flex flex-col items-center px-3 py-2 text-brown-400 hover:text-brown-600 cursor-pointer transition-colors duration-200" onclick="window.location.href='/#restaurants'">
+                <i class="fas fa-search text-xl mb-1"></i>
+                <span class="text-xs font-medium">Discover</span>
+            </div>
+            <div class="nav-item flex flex-col items-center px-3 py-2 text-brown-400 hover:text-brown-600 cursor-pointer transition-colors duration-200" onclick="window.location.href='/#reservations'">
+                <i class="fas fa-calendar-alt text-xl mb-1"></i>
+                <span class="text-xs font-medium">Bookings</span>
+            </div>
+            <div class="flex flex-col items-center px-3 py-2 text-brown-600 cursor-pointer">
+                <i class="fas fa-user text-xl mb-1"></i>
+                <span class="text-xs font-medium">Profile</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Desktop Side Navigation (visible only on desktop) -->
+    <div class="hidden md:block fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-2 space-y-2">
+            <div class="nav-item flex flex-col items-center px-3 py-3 text-brown-600 hover:text-brown-800 cursor-pointer transition-colors duration-200 rounded-md hover:bg-gray-50" onclick="goToHome()" title="Home">
+                <i class="fas fa-home text-xl"></i>
+            </div>
+            <div class="nav-item flex flex-col items-center px-3 py-3 text-brown-600 hover:text-brown-800 cursor-pointer transition-colors duration-200 rounded-md hover:bg-gray-50" onclick="window.location.href='/#restaurants'" title="Discover Restaurants">
+                <i class="fas fa-search text-xl"></i>
+            </div>
+            <div class="nav-item flex flex-col items-center px-3 py-3 text-brown-600 hover:text-brown-800 cursor-pointer transition-colors duration-200 rounded-md hover:bg-gray-50" onclick="window.location.href='/#reservations'" title="My Bookings">
+                <i class="fas fa-calendar-alt text-xl"></i>
+            </div>
+            <div class="flex flex-col items-center px-3 py-3 text-brown-800 cursor-pointer bg-brown-50 rounded-md font-bold" title="Profile">
+                <i class="fas fa-user text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center space-x-3">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span>Updating profile...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/customer.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserProfile();
+            setupProfileEventListeners();
+        });
+
+        function loadUserProfile() {
+            // Fetch fresh data from server and populate form
+            fetch('/api/customer/profile')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch profile');
+                    }
+                    return response.json();
+                })
+                .then(profile => {
+                    // Populate form inputs with profile data
+                    document.getElementById('editName').value = profile.name || '';
+                    document.getElementById('editEmail').value = profile.email || '';
+                    document.getElementById('editPhone').value = profile.phone || '';
+                    
+                    if (profile.created_at) {
+                        const memberSince = new Date(profile.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        document.getElementById('displayMemberSince').textContent = memberSince;
+                    }
+
+                    // Update localStorage with fresh data
+                    localStorage.setItem('userData', JSON.stringify(profile));
+                    
+                    // Load statistics
+                    loadUserStatistics();
+                })
+                .catch(error => {
+                    console.error('Error loading profile:', error);
+                    showErrorMessage('Failed to load profile data');
+                    
+                    // Fallback to localStorage if available
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                    if (userData.name) {
+                        document.getElementById('editName').value = userData.name;
+                        document.getElementById('editEmail').value = userData.email || '';
+                        document.getElementById('editPhone').value = userData.phone || '';
+                    }
+                });
+        }
+
+        function loadUserStatistics() {
+            fetch('/api/user/reservation-stats')
+                .then(response => response.json())
+                .then(stats => {
+                    document.getElementById('total-reservations-count').textContent = stats.totalReservations || 0;
+                    document.getElementById('upcoming-reservations-count').textContent = stats.upcomingReservations || 0;
+                    document.getElementById('favorite-restaurants-count').textContent = stats.restaurantsVisited || 0;
+                })
+                .catch(error => {
+                    console.error('Error loading statistics:', error);
+                    // Set default values on error
+                    document.getElementById('total-reservations-count').textContent = '0';
+                    document.getElementById('upcoming-reservations-count').textContent = '0';
+                    document.getElementById('favorite-restaurants-count').textContent = '0';
+                });
+        }
+
+        function setupProfileEventListeners() {
+            // Back button
+            document.getElementById('backBtn').addEventListener('click', function() {
+                window.history.back();
+            });
+
+            // Save button
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                saveProfileChanges();
+            });
+
+            // Sign out button
+            document.getElementById('signOutBtn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to sign out?')) {
+                    signOut();
+                }
+            });
+        }
+
+        async function saveProfileChanges() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                const updatedData = {
+                    name: document.getElementById('editName').value.trim(),
+                    email: document.getElementById('editEmail').value.trim(),
+                    phone: document.getElementById('editPhone').value.trim()
+                };
+
+                // Validate inputs
+                if (!updatedData.name || !updatedData.email) {
+                    throw new Error('Name and email are required');
+                }
+
+                const response = await fetch('/api/customer/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update localStorage if it exists
+                    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                    Object.assign(userData, updatedData);
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // Refresh the form with updated data
+                    loadUserProfile();
+                    
+                    showSuccessMessage('Profile updated successfully!');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to update profile');
+                }
+            } catch (error) {
+                showErrorMessage(error.message);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function signOut() {
+            // Clear any localStorage data
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('userRole');
+            
+            // Call server logout
+            fetch('/api/auth/logout', {
+                method: 'POST'
+            }).then(() => {
+                window.location.href = '/login';
+            }).catch(() => {
+                // Even if logout fails, redirect to login
+                window.location.href = '/login';
+            });
+        }
+
+        function goToHome() {
+            window.location.href = '/';
+        }
+
+        function showSuccessMessage(message) {
+            // Create temporary success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function showErrorMessage(message) {
+            // Create temporary error notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

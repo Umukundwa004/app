@@ -57,11 +57,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update mobile nav active states
                 document.querySelectorAll('.mobile-nav-link').forEach(l => {
-                    l.classList.remove('active', 'text-brown-600');
+                    l.classList.remove('text-brown-600');
                     l.classList.add('text-brown-400');
                 });
-                link.classList.add('active', 'text-brown-600');
+                link.classList.add('text-brown-600');
                 link.classList.remove('text-brown-400');
+            });
+        });
+        
+        // Desktop navigation
+        desktopNavLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = link.getAttribute('data-section');
+                showSection(section);
+                // Update desktop nav active states
+                desktopNavLinks.forEach(l => {
+                    l.classList.remove('text-brown-800', 'font-bold');
+                    l.classList.add('text-brown-600');
+                });
+                link.classList.add('text-brown-800', 'font-bold');
+                link.classList.remove('text-brown-600');
             });
         });
         
@@ -70,20 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') performSearch();
         });
-            desktopNavLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const section = link.getAttribute('data-section');
-                    showSection(section);
-                    // Update desktop nav active states
-                    desktopNavLinks.forEach(l => {
-                        l.classList.remove('text-brown-800', 'font-bold');
-                        l.classList.add('text-brown-600');
-                    });
-                    link.classList.add('text-brown-800', 'font-bold');
-                    link.classList.remove('text-brown-600');
-                });
-            });
         
         // Reservation tabs
         document.querySelectorAll('.reservation-tab').forEach(tab => {
@@ -1086,4 +1088,33 @@ document.addEventListener('DOMContentLoaded', function() {
             notification.remove();
         }, 5000);
     }
+
+    // User authentication functions
+    async function logoutUser() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('userRole');
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.location.href = '/login';
+        }
+    }
+
+    // Profile navigation functions
+    function navigateToProfile() {
+        window.location.href = '/profile';
+    }
+
+    function navigateToHome() {
+        window.location.href = '/';
+    }
+
+    // Make functions globally available for profile page navigation
+    window.goToProfile = navigateToProfile;
+    window.goToHome = navigateToHome;
+    window.logoutUser = logoutUser;
 });
