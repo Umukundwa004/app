@@ -527,17 +527,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function createReservation(e) {
         e.preventDefault();
+        // Basic client-side validation
+        const customer_name = document.getElementById('customer-name').value.trim();
+        const customer_email = document.getElementById('customer-email').value.trim();
+        const customer_phone = document.getElementById('customer-phone').value.trim();
+        const reservation_date = document.getElementById('reservation-date').value;
+        const reservation_time = document.getElementById('reservation-time').value;
+        const party_size = (document.getElementById('party-size') ? document.getElementById('party-size').value : '') || '';
+
+        if (!customer_name || !customer_email || !reservation_date || !reservation_time || !party_size) {
+            showSuccess('Error', 'Please fill in all required fields (name, email, date, time, party size).', false);
+            return;
+        }
+
+        const submitBtn = document.querySelector('#reservation-form button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.dataset._origText = submitBtn.textContent;
+            submitBtn.textContent = 'Booking...';
+        }
 
         const formData = {
-            customer_name: document.getElementById('customer-name').value,
-            customer_email: document.getElementById('customer-email').value,
-            customer_phone: document.getElementById('customer-phone').value,
+            customer_name,
+            customer_email,
+            customer_phone,
             restaurant_id: selectedRestaurantId,
-            reservation_date: document.getElementById('reservation-date').value,
-            reservation_time: document.getElementById('reservation-time').value,
-            party_size: document.getElementById('reservation-party-size').value || 1,
-            occasion: document.getElementById('reservation-occasion') ? document.getElementById('reservation-occasion').value : null,
-            special_requests: document.getElementById('reservation-requests') ? document.getElementById('reservation-requests').value : null
+            reservation_date,
+            reservation_time,
+            party_size: party_size || 1,
+            occasion: document.getElementById('occasion') ? document.getElementById('occasion').value : null,
+            special_requests: document.getElementById('special-requests') ? document.getElementById('special-requests').value : null
         };
 
         fetch('/api/reservations', {
@@ -559,6 +578,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error creating reservation:', error);
             showSuccess('Error', 'An error occurred while creating your reservation. Please try again.', false);
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset._origText || 'Book Reservation';
+                delete submitBtn.dataset._origText;
+            }
         });
     }
     
