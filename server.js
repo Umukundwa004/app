@@ -1,4 +1,5 @@
 // server.js - Enhanced with all services
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
@@ -6,12 +7,14 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const path = require('path');
 const session = require('express-session');
-const nodemailer = require('nodemailer');
+const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
+const axios = require('axios');
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 const multer = require('multer');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9000;
 
 // Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'rwanda-eats-reserve-secret-key';
@@ -58,37 +61,51 @@ const upload = multer({
     }
 });
 
-// Email configuration (for demo - in production use real SMTP)
-let emailTransporter;
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    // Use provided SMTP credentials (e.g., Gmail app password)
-    emailTransporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
+// MailerSend Email configuration
+let mailerSend;
+if (process.env.MAILERSEND_API_KEY) {
+    mailerSend = new MailerSend({
+        apiKey: process.env.MAILERSEND_API_KEY,
     });
+    console.log('MailerSend configured successfully');
 } else {
-    // Fallback to ethereal-like logging transporter for development
-    emailTransporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        auth: {
-            user: process.env.ETHEREAL_USER || 'your-email@ethereal.email',
-            pass: process.env.ETHEREAL_PASS || 'your-password'
-        }
-    });
+    console.log('MailerSend API key not found. Email functionality will be limited.');
 }
 
-// Verify email transporter when possible and log result
-if (emailTransporter) {
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        emailTransporter.verify()
-            .then(() => console.log('Email transporter verified and ready to send messages.'))
-            .catch(err => console.error('Email transporter verification failed:', err));
-    } else {
-        console.log('Email transporter configured for development/fallback mode. Set EMAIL_USER and EMAIL_PASS to enable real SMTP.');
+// Brevo (Sendinblue) Email configuration
+let brevoClient;
+if (process.env.BREVO_API_KEY) {
+    const defaultClient = SibApiV3Sdk.ApiClient.instance;
+    const apiKey = defaultClient.authentications['api-key'];
+    apiKey.apiKey = process.env.BREVO_API_KEY;
+    brevoClient = {
+        transactionalEmailApi: new SibApiV3Sdk.TransactionalEmailsApi(),
+        campaignsApi: new SibApiV3Sdk.EmailCampaignsApi()
+    };
+    console.log('Brevo configured successfully');
+} else {
+    console.log('Brevo API key not found.');
+}
+
+// Email verification service using MailerSend API
+class EmailVerificationService {
+    static async verifyEmail(email) {
+        try {
+            const response = await axios.post(
+                `${process.env.MAILERSEND_API_URL}/email-verification/verify`,
+                { email },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.MAILERSEND_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Email verification error:', error.response?.data || error.message);
+            return { valid: false, error: error.response?.data || error.message };
+        }
     }
 }
 
@@ -174,27 +191,92 @@ const isAuthenticated = (req, res, next) => {
     next();
 };
 
-// Notification Service
-class NotificationService {
+// Enhanced Email Service with Brevo and MailerSend
+class EmailService {
+    // Send transactional emails using Brevo (preferred) or MailerSend (fallback)
     static async sendEmail(to, subject, html) {
         try {
-            // In production, this would send real emails
-            console.log(`[EMAIL] To: ${to}, Subject: ${subject}`);
+            // Try Brevo first
+            if (brevoClient) {
+                const sendSmtpEmail = {
+                    sender: {
+                        name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
+                        email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
+                    },
+                    to: [{ email: to }],
+                    subject: subject,
+                    htmlContent: html
+                };
+
+                const response = await brevoClient.transactionalEmailApi.sendTransacEmail(sendSmtpEmail);
+                console.log(`[BREVO EMAIL SENT] To: ${to}, Subject: ${subject}, ID: ${response.messageId}`);
+                return true;
+            }
+
+            // Fallback to MailerSend
+            if (mailerSend) {
+                const sentFrom = new Sender(
+                    process.env.MAILERSEND_FROM_EMAIL || 'noreply@yourdomain.com',
+                    process.env.MAILERSEND_FROM_NAME || 'Rwanda Eats Reserve'
+                );
+
+                const recipients = [new Recipient(to)];
+
+                const emailParams = new EmailParams()
+                    .setFrom(sentFrom)
+                    .setTo(recipients)
+                    .setSubject(subject)
+                    .setHtml(html);
+
+                const response = await mailerSend.email.send(emailParams);
+                console.log(`[MAILERSEND EMAIL SENT] To: ${to}, Subject: ${subject}`);
+                return true;
+            }
+
+            // No email service available
+            console.log(`[EMAIL DISABLED] To: ${to}, Subject: ${subject}`);
             console.log(`[EMAIL CONTENT] ${html}`);
-
-            // Attempt to send using configured transporter
-            await emailTransporter.sendMail({
-                from: process.env.EMAIL_FROM || `"Rwanda Eats Reserve" <${process.env.EMAIL_USER || 'noreply@rwandaeats.com'}>`,
-                to: to,
-                subject: subject,
-                html: html
-            });
-
-            return true;
+            return false;
         } catch (error) {
-            console.error('Email sending error:', error);
+            console.error('Email sending error:', error.response?.data || error.message);
             return false;
         }
+    }
+
+    // Create and send email campaigns using Brevo
+    static async createEmailCampaign(campaignData) {
+        try {
+            if (!brevoClient) {
+                throw new Error('Brevo not configured for campaigns');
+            }
+
+            const emailCampaign = {
+                name: campaignData.name || 'Rwanda Eats Campaign',
+                subject: campaignData.subject,
+                sender: {
+                    name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
+                    email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
+                },
+                type: 'classic',
+                htmlContent: campaignData.htmlContent,
+                recipients: campaignData.recipients || { listIds: [] },
+                scheduledAt: campaignData.scheduledAt || null
+            };
+
+            const response = await brevoClient.campaignsApi.createEmailCampaign(emailCampaign);
+            console.log(`[BREVO CAMPAIGN CREATED] ID: ${response.id}, Name: ${campaignData.name}`);
+            return response;
+        } catch (error) {
+            console.error('Campaign creation error:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+}
+
+// Notification Service (Updated to use new EmailService)
+class NotificationService {
+    static async sendEmail(to, subject, html) {
+        return await EmailService.sendEmail(to, subject, html);
     }
 
     static async sendSMS(to, message) {
@@ -395,6 +477,73 @@ app.post('/api/auth/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Email Verification API (using MailerSend)
+app.post('/api/email/verify', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email address is required' });
+        }
+
+        // Use MailerSend email verification API
+        const verificationResult = await EmailVerificationService.verifyEmail(email);
+
+        res.json({
+            email,
+            valid: verificationResult.valid || false,
+            result: verificationResult.result || 'unknown',
+            reason: verificationResult.reason || null,
+            risk: verificationResult.risk || 'unknown'
+        });
+    } catch (error) {
+        console.error('Email verification API error:', error);
+        res.status(500).json({ 
+            error: 'Email verification service temporarily unavailable',
+            valid: false 
+        });
+    }
+});
+
+// Email Token Verification (for email confirmation links)
+app.post('/api/auth/verify-email-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ error: 'Verification token is required' });
+        }
+
+        // Find user with this verification token
+        const [users] = await db.execute(
+            'SELECT id, email, verification_token_expires FROM users WHERE verification_token = ?',
+            [token]
+        );
+
+        if (users.length === 0) {
+            return res.status(400).json({ error: 'Invalid verification token' });
+        }
+
+        const user = users[0];
+
+        // Check if token has expired
+        if (new Date() > new Date(user.verification_token_expires)) {
+            return res.status(400).json({ error: 'Verification token has expired' });
+        }
+
+        // Mark email as verified
+        await db.execute(
+            'UPDATE users SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL WHERE id = ?',
+            [user.id]
+        );
+
+        res.json({ message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Email token verification error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -637,6 +786,66 @@ app.post('/api/auth/reset-password', async (req, res) => {
     } catch (error) {
         console.error('Password reset error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Email Campaign Management (Brevo)
+app.post('/api/email/campaign', requireAuth, async (req, res) => {
+    try {
+        // Only allow admin users to create campaigns
+        if (req.session.user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { name, subject, htmlContent, recipients, scheduledAt } = req.body;
+
+        if (!subject || !htmlContent) {
+            return res.status(400).json({ error: 'Subject and content are required' });
+        }
+
+        const campaignData = {
+            name: name || `Campaign ${new Date().toISOString()}`,
+            subject,
+            htmlContent,
+            recipients,
+            scheduledAt
+        };
+
+        const campaign = await EmailService.createEmailCampaign(campaignData);
+        
+        res.json({ 
+            message: 'Email campaign created successfully',
+            campaignId: campaign.id,
+            campaign: campaign
+        });
+    } catch (error) {
+        console.error('Campaign creation error:', error);
+        res.status(500).json({ 
+            error: 'Failed to create email campaign',
+            details: error.message 
+        });
+    }
+});
+
+// Send test email
+app.post('/api/email/test', requireAuth, async (req, res) => {
+    try {
+        const { to, subject, content } = req.body;
+
+        if (!to || !subject || !content) {
+            return res.status(400).json({ error: 'To, subject, and content are required' });
+        }
+
+        const success = await EmailService.sendEmail(to, subject, content);
+
+        if (success) {
+            res.json({ message: 'Test email sent successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to send test email' });
+        }
+    } catch (error) {
+        console.error('Test email error:', error);
+        res.status(500).json({ error: 'Failed to send test email' });
     }
 });
 
@@ -1262,15 +1471,13 @@ app.post('/api/debug/send-test-email', async (req, res) => {
         process.exit(1);
     }
 
-    // Verify email transporter optionally (if SMTP configured)
-    if (emailTransporter && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        try {
-            await emailTransporter.verify();
-            console.log('Email transporter verified and ready');
-        } catch (e) {
-            console.warn('Email transporter verification failed. Emails may not be sent.');
-            console.warn(e.message || e);
-        }
+    // Verify email services
+    if (brevoClient && process.env.BREVO_API_KEY) {
+        console.log('Brevo email service ready (primary)');
+    } else if (mailerSend && process.env.MAILERSEND_API_KEY) {
+        console.log('MailerSend email service ready (fallback)');
+    } else {
+        console.warn('No email service configured. Emails will not be sent.');
     }
 
     app.listen(PORT, () => {
