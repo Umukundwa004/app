@@ -4,7 +4,7 @@ module.exports = {
     db: {
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '', // Change this to your MySQL root password
+        password: process.env.DB_PASSWORD || 'vestine004', // Change this to your MySQL root password
         database: 'rwanda_eats_reserve',
         waitForConnections: true,
         connectionLimit: 10,

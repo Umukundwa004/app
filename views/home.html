@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Favorite Restaurants - Rwanda Eats</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #977669;
+            --primary-dark: #7d5e52;
+            --secondary: #64748b;
+            --background: #ffffff;
+            --card: #f8fafc;
+            --foreground: #0f172a;
+            --muted-foreground: #64748b;
+            --border: #e2e8f0;
+            --destructive: #ef4444;
+            --favorite: #ff6b6b;
+            --favorite-active: #ee5a6f;
+            --radius: 0.5rem;
+        }
+
+        .dark {
+            --background: #0f172a;
+            --card: #1e293b;
+            --foreground: #f1f5f9;
+            --muted-foreground: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Header & Navigation */
+        header {
+            background-color: var(--background);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--foreground);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--foreground);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .page-title i {
+            color: var(--favorite);
+            font-size: 1.8rem;
+        }
+
+        .page-subtitle {
+            color: var(--muted-foreground);
+            font-size: 1rem;
+        }
+
+        /* View Toggle */
+        .view-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background-color: var(--card);
+            color: var(--foreground);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .favorites-count {
+            padding: 0.5rem 1rem;
+            background-color: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            font-weight: 500;
+            color: var(--muted-foreground);
+        }
+
+        .favorites-count span {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Restaurant Grid */
+        .restaurant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem 0;
+        }
+
+        .restaurant-card {
+            background-color: var(--card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .restaurant-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-image-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .restaurant-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .favorite-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 45px;
+            height: 45px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        .favorite-badge:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .favorite-badge i {
+            font-size: 1.5rem;
+            color: var(--muted-foreground);
+            transition: all 0.3s;
+        }
+
+        .favorite-badge.active {
+            background-color: var(--favorite);
+            animation: heartBeat 0.3s ease;
+        }
+
+        .favorite-badge.active i {
+            color: white;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.3); }
+            50% { transform: scale(1.1); }
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-header {
+            margin-bottom: 0.75rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+        }
+
+        .card-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #f59e0b;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-location {
+            color: var(--muted-foreground);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .card-description {
+            color: var(--muted-foreground);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-cuisines {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .cuisine-tag {
+            padding: 0.25rem 0.75rem;
+            background-color: var(--background);
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            color: var(--muted-foreground);
+            border: 1px solid var(--border);
+        }
+
+        .card-price {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .view-details-btn {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 1rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--primary);
+            background-color: transparent;
+            color: var(--primary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-details-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            color: var(--muted-foreground);
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+        }
+
+        .empty-state p {
+            color: var(--muted-foreground);
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .primary-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .primary-button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--background);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 0;
+            z-index: 90;
+        }
+
+        .nav-items {
+            display: flex;
+            justify-content: space-around;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--muted-foreground);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        .favorites-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--favorite);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        /* Loading State */
+        .loading-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem 0;
+        }
+
+        .loading-card {
+            height: 400px;
+            background-color: var(--card);
+            border-radius: var(--radius);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .restaurant-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .view-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .view-toggle {
+                width: 100%;
+            }
+
+            .view-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container nav-container">
+            <div class="logo">
+                <i class="fas fa-heart"></i>
+                Rwanda Eats
+            </div>
+            <div class="nav-links">
+                <a class="nav-link" onclick="showAllRestaurants()">
+                    <i class="fas fa-utensils"></i> All Restaurants
+                </a>
+                <a class="nav-link active" onclick="showFavorites()">
+                    <i class="fas fa-heart"></i> My Favorites
+                </a>
+                <a href="/customer" class="nav-link">
+                    <i class="fas fa-search"></i> Explore
+                </a>
+                <a href="/customer" class="nav-link">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">
+                <i class="fas fa-heart"></i>
+                <span id="pageTitle">My Favorite Restaurants</span>
+            </h1>
+            <p class="page-subtitle" id="pageSubtitle">Your curated list of beloved dining spots</p>
+        </div>
+    </section>
+
+    <!-- View Controls -->
+    <section class="container">
+        <div class="view-controls">
+            <div class="view-toggle">
+                <button class="view-btn" id="viewAll" onclick="showAllRestaurants()">
+                    <i class="fas fa-utensils"></i>
+                    All Restaurants
+                </button>
+                <button class="view-btn active" id="viewFavorites" onclick="showFavorites()">
+                    <i class="fas fa-heart"></i>
+                    Favorites Only
+                </button>
+            </div>
+            <div class="favorites-count">
+                <i class="fas fa-heart"></i>
+                <span id="favCount">0</span> Favorites
+            </div>
+        </div>
+    </section>
+
+    <!-- Restaurant Grid -->
+    <main class="container">
+        <div class="restaurant-grid" id="restaurantGrid">
+            <!-- Loading state -->
+            <div class="loading-grid">
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-items">
+            <a class="nav-item" onclick="showAllRestaurants()">
+                <i class="fas fa-utensils nav-icon"></i>
+                <span>All</span>
+            </a>
+            <a class="nav-item active">
+                <i class="fas fa-heart nav-icon"></i>
+                <span>Favorites</span>
+                <span class="favorites-badge" id="favBadge">0</span>
+            </a>
+            <a href="/customer" class="nav-item">
+                <i class="fas fa-search nav-icon"></i>
+                <span>Explore</span>
+            </a>
+            <a href="/customer" class="nav-item">
+                <i class="fas fa-user nav-icon"></i>
+                <span>Profile</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        // State management
+        let state = {
+            restaurants: [],
+            favorites: JSON.parse(localStorage.getItem('favorites')) || [],
+            currentView: 'favorites', // 'all' or 'favorites'
+            loading: true
+        };
+
+        // DOM Elements
+        const restaurantGrid = document.getElementById('restaurantGrid');
+        const themeToggle = document.getElementById('themeToggle');
+        const favCount = document.getElementById('favCount');
+        const favBadge = document.getElementById('favBadge');
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+        const viewAll = document.getElementById('viewAll');
+        const viewFavorites = document.getElementById('viewFavorites');
+
+        // Initialize the app
+        async function init() {
+            await loadRestaurants();
+            setupEventListeners();
+            updateFavoritesCount();
+            renderRestaurants();
+        }
+
+        // Load restaurants from API
+        async function loadRestaurants() {
+            try {
+                const response = await fetch('/api/restaurants');
+                const data = await response.json();
+                state.restaurants = data;
+                state.loading = false;
+            } catch (error) {
+                console.error('Error loading restaurants:', error);
+                state.loading = false;
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Load theme preference
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark');
+                themeToggle.querySelector('i').classList.replace('fa-moon', 'fa-sun');
+            }
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const icon = themeToggle.querySelector('i');
+            if (document.body.classList.contains('dark')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Toggle favorite status
+        function toggleFavorite(restaurantId, event) {
+            event.stopPropagation();
+            
+            if (state.favorites.includes(restaurantId)) {
+                state.favorites = state.favorites.filter(id => id !== restaurantId);
+            } else {
+                state.favorites.push(restaurantId);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('favorites', JSON.stringify(state.favorites));
+            
+            // Update UI
+            updateFavoritesCount();
+            renderRestaurants();
+        }
+
+        // Update favorites count
+        function updateFavoritesCount() {
+            const count = state.favorites.length;
+            favCount.textContent = count;
+            favBadge.textContent = count;
+            favBadge.style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        // Show all restaurants
+        function showAllRestaurants() {
+            state.currentView = 'all';
+            pageTitle.textContent = 'All Restaurants';
+            pageSubtitle.textContent = 'Discover and favorite your preferred dining spots';
+            viewAll.classList.add('active');
+            viewFavorites.classList.remove('active');
+            renderRestaurants();
+        }
+
+        // Show favorites only
+        function showFavorites() {
+            state.currentView = 'favorites';
+            pageTitle.textContent = 'My Favorite Restaurants';
+            pageSubtitle.textContent = 'Your curated list of beloved dining spots';
+            viewFavorites.classList.add('active');
+            viewAll.classList.remove('active');
+            renderRestaurants();
+        }
+
+        // Get restaurants to display
+        function getRestaurantsToDisplay() {
+            if (state.currentView === 'favorites') {
+                return state.restaurants.filter(r => state.favorites.includes(r.id.toString()));
+            }
+            return state.restaurants;
+        }
+
+        // Render restaurants to the grid
+        function renderRestaurants() {
+            if (state.loading) {
+                return;
+            }
+
+            const restaurantsToShow = getRestaurantsToDisplay();
+            
+            if (restaurantsToShow.length === 0) {
+                if (state.currentView === 'favorites') {
+                    restaurantGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon">❤️</div>
+                            <h3>No Favorites Yet</h3>
+                            <p>Start adding restaurants to your favorites by clicking the heart icon!</p>
+                            <button class="primary-button" onclick="showAllRestaurants()">
+                                <i class="fas fa-utensils"></i>
+                                Browse All Restaurants
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    restaurantGrid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;">
+                            <div class="empty-icon">🍽️</div>
+                            <h3>No Restaurants Found</h3>
+                            <p>We couldn't find any restaurants at the moment.</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            restaurantGrid.innerHTML = restaurantsToShow.map(restaurant => {
+                const isFavorite = state.favorites.includes(restaurant.id.toString());
+                const cuisineTypes = restaurant.cuisine_types ? 
+                    (typeof restaurant.cuisine_types === 'string' ? 
+                        restaurant.cuisine_types.split(',') : 
+                        restaurant.cuisine_types) : 
+                    [];
+                
+                return `
+                    <div class="restaurant-card">
+                        <div class="card-image-container">
+                            <img src="${restaurant.image_url || '/uploads/restaurants/default.jpg'}" 
+                                 alt="${restaurant.name}" 
+                                 class="card-image"
+                                 onerror="this.src='/uploads/restaurants/default.jpg'">
+                            <div class="favorite-badge ${isFavorite ? 'active' : ''}" 
+                                 onclick="toggleFavorite('${restaurant.id}', event)">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="card-header">
+                                <h3 class="card-title">${restaurant.name}</h3>
+                                <div class="card-rating">
+                                    ${generateStarRating(restaurant.rating || 0)}
+                                    <span>${(restaurant.rating || 0).toFixed(1)}</span>
+                                </div>
+                            </div>
+                            <div class="card-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>${restaurant.location || 'Kigali, Rwanda'}</span>
+                            </div>
+                            <p class="card-description">${restaurant.description || 'Delicious food awaits you!'}</p>
+                            <div class="card-footer">
+                                <div class="card-cuisines">
+                                    ${cuisineTypes.slice(0, 2).map(cuisine => 
+                                        `<span class="cuisine-tag">${cuisine.trim()}</span>`
+                                    ).join('')}
+                                </div>
+                                <div class="card-price">${restaurant.price_range || '$$'}</div>
+                            </div>
+                            <button class="view-details-btn" onclick="window.location.href='/customer'">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Generate star rating HTML
+        function generateStarRating(rating) {
+            let stars = '';
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            if (halfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            const emptyStars = 5 - Math.ceil(rating);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="far fa-star"></i>';
+            }
+            
+            return stars;
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>

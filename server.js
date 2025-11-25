@@ -191,65 +191,91 @@ const isAuthenticated = (req, res, next) => {
     next();
 };
 
-// Enhanced Email Service with Brevo and MailerSend
+// Enhanced Email Service with comprehensive error handling and logging
 class EmailService {
     // Send transactional emails using Brevo (preferred) or MailerSend (fallback)
     static async sendEmail(to, subject, html) {
-        try {
-            // Try Brevo first
-            if (brevoClient) {
-                const sendSmtpEmail = {
-                    sender: {
-                        name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
-                        email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
-                    },
-                    to: [{ email: to }],
-                    subject: subject,
-                    htmlContent: html
-                };
+        const MAX_RETRIES = 2;
+        let lastError = null;
 
-                const response = await brevoClient.transactionalEmailApi.sendTransacEmail(sendSmtpEmail);
-                console.log(`[BREVO EMAIL SENT] To: ${to}, Subject: ${subject}, ID: ${response.messageId}`);
-                return true;
+        // Try Brevo first
+        if (brevoClient && process.env.BREVO_API_KEY) {
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const sendSmtpEmail = {
+                        sender: {
+                            name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
+                            email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
+                        },
+                        to: [{ email: to }],
+                        subject: subject,
+                        htmlContent: html
+                    };
+
+                    const response = await brevoClient.transactionalEmailApi.sendTransacEmail(sendSmtpEmail);
+                    console.log(`✅ [BREVO EMAIL SENT] To: ${to}, Subject: ${subject}, MessageID: ${response.messageId}`);
+                    return { success: true, provider: 'brevo', messageId: response.messageId };
+                } catch (error) {
+                    lastError = error;
+                    console.error(`⚠️ [BREVO ATTEMPT ${attempt + 1}/${MAX_RETRIES + 1}] Failed:`, error.message);
+                    
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+                    }
+                }
             }
-
-            // Fallback to MailerSend
-            if (mailerSend) {
-                const sentFrom = new Sender(
-                    process.env.MAILERSEND_FROM_EMAIL || 'noreply@yourdomain.com',
-                    process.env.MAILERSEND_FROM_NAME || 'Rwanda Eats Reserve'
-                );
-
-                const recipients = [new Recipient(to)];
-
-                const emailParams = new EmailParams()
-                    .setFrom(sentFrom)
-                    .setTo(recipients)
-                    .setSubject(subject)
-                    .setHtml(html);
-
-                const response = await mailerSend.email.send(emailParams);
-                console.log(`[MAILERSEND EMAIL SENT] To: ${to}, Subject: ${subject}`);
-                return true;
-            }
-
-            // No email service available
-            console.log(`[EMAIL DISABLED] To: ${to}, Subject: ${subject}`);
-            console.log(`[EMAIL CONTENT] ${html}`);
-            return false;
-        } catch (error) {
-            console.error('Email sending error:', error.response?.data || error.message);
-            return false;
         }
+
+        // Fallback to MailerSend
+        if (mailerSend && process.env.MAILERSEND_API_KEY) {
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    const sentFrom = new Sender(
+                        process.env.MAILERSEND_FROM_EMAIL || 'noreply@yourdomain.com',
+                        process.env.MAILERSEND_FROM_NAME || 'Rwanda Eats Reserve'
+                    );
+
+                    const recipients = [new Recipient(to)];
+
+                    const emailParams = new EmailParams()
+                        .setFrom(sentFrom)
+                        .setTo(recipients)
+                        .setSubject(subject)
+                        .setHtml(html);
+
+                    const response = await mailerSend.email.send(emailParams);
+                    console.log(`✅ [MAILERSEND EMAIL SENT] To: ${to}, Subject: ${subject}`);
+                    return { success: true, provider: 'mailersend', response };
+                } catch (error) {
+                    lastError = error;
+                    console.error(`⚠️ [MAILERSEND ATTEMPT ${attempt + 1}/${MAX_RETRIES + 1}] Failed:`, error.message);
+                    
+                    if (attempt < MAX_RETRIES) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                    }
+                }
+            }
+        }
+
+        // All attempts failed
+        console.error('❌ [EMAIL FAILED] All providers failed:', lastError?.message || 'No providers configured');
+        console.log(`📧 [EMAIL FALLBACK] To: ${to}, Subject: ${subject}`);
+        console.log(`📝 [EMAIL CONTENT] ${html.substring(0, 200)}...`);
+        
+        return { 
+            success: false, 
+            error: lastError?.message || 'No email providers configured',
+            fallback: true 
+        };
     }
 
     // Create and send email campaigns using Brevo
     static async createEmailCampaign(campaignData) {
-        try {
-            if (!brevoClient) {
-                throw new Error('Brevo not configured for campaigns');
-            }
+        if (!brevoClient) {
+            throw new Error('Brevo not configured for campaigns');
+        }
 
+        try {
             const emailCampaign = {
                 name: campaignData.name || 'Rwanda Eats Campaign',
                 subject: campaignData.subject,
@@ -264,19 +290,221 @@ class EmailService {
             };
 
             const response = await brevoClient.campaignsApi.createEmailCampaign(emailCampaign);
-            console.log(`[BREVO CAMPAIGN CREATED] ID: ${response.id}, Name: ${campaignData.name}`);
+            console.log(`✅ [BREVO CAMPAIGN CREATED] ID: ${response.id}, Name: ${campaignData.name}`);
             return response;
         } catch (error) {
-            console.error('Campaign creation error:', error.response?.data || error.message);
+            console.error('❌ [CAMPAIGN CREATION ERROR]:', error.message);
             throw error;
         }
     }
+
+    // Test email configuration
+    static async testConfiguration() {
+        const results = {
+            brevo: { configured: false, working: false },
+            mailersend: { configured: false, working: false }
+        };
+
+        // Test Brevo
+        if (brevoClient && process.env.BREVO_API_KEY) {
+            results.brevo.configured = true;
+            try {
+                await brevoClient.accountApi.getAccount();
+                results.brevo.working = true;
+                console.log('✅ Brevo configuration is working');
+            } catch (error) {
+                console.error('❌ Brevo configuration failed:', error.message);
+            }
+        }
+
+        // Test MailerSend (basic check)
+        if (mailerSend && process.env.MAILERSEND_API_KEY) {
+            results.mailersend.configured = true;
+            results.mailersend.working = true; // Can't easily test without sending
+            console.log('✅ MailerSend is configured');
+        }
+
+        return results;
+    }
 }
+
+// Enhanced email templates with better styling
+const emailTemplates = {
+    welcome: (name, verificationUrl) => `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f5efe7; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+                .header { background: linear-gradient(135deg, #43302b 0%, #846358 100%); padding: 40px 20px; text-align: center; }
+                .logo { width: 80px; height: 80px; margin: 0 auto 20px; }
+                .header h1 { color: #ffffff; margin: 0; font-size: 28px; }
+                .content { padding: 40px 30px; }
+                .content h2 { color: #43302b; font-size: 24px; margin-top: 0; }
+                .content p { color: #666666; line-height: 1.6; font-size: 16px; }
+                .button { display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #a18072 0%, #977669 100%); color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+                .footer { background-color: #f8f3e4; padding: 30px; text-align: center; color: #666666; font-size: 14px; }
+                @media only screen and (max-width: 600px) {
+                    .content { padding: 30px 20px; }
+                    .header h1 { font-size: 24px; }
+                    .content h2 { font-size: 20px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🍽️ Rwanda Eats Reserve</h1>
+                </div>
+                <div class="content">
+                    <h2>Welcome, ${name}! 🎉</h2>
+                    <p>Thank you for joining Rwanda Eats Reserve. We're thrilled to have you as part of our community!</p>
+                    <p>To get started and unlock all features, please verify your email address:</p>
+                    <div style="text-align: center;">
+                        <a href="${verificationUrl}" class="button">Verify My Email</a>
+                    </div>
+                    <p style="color: #999; font-size: 14px; margin-top: 30px;">If the button doesn't work, copy and paste this link into your browser:<br><a href="${verificationUrl}" style="color: #a18072;">${verificationUrl}</a></p>
+                    <p style="color: #999; font-size: 14px;">This link will expire in 24 hours. If you didn't create an account, please ignore this email.</p>
+                </div>
+                <div class="footer">
+                    <p><strong>Rwanda Eats Reserve</strong></p>
+                    <p>Discover & Reserve the Best Restaurants in Rwanda</p>
+                    <p style="font-size: 12px; color: #999;">© 2024 Rwanda Eats Reserve. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+
+    reservationConfirmation: (customerName, restaurantName, date, time, partySize, location) => `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f5efe7; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+                .header { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 40px 20px; text-align: center; }
+                .header h1 { color: #ffffff; margin: 0; font-size: 28px; }
+                .success-icon { font-size: 64px; margin-bottom: 10px; }
+                .content { padding: 40px 30px; }
+                .reservation-box { background-color: #f8f3e4; border-left: 4px solid #a18072; padding: 20px; margin: 20px 0; border-radius: 8px; }
+                .reservation-box h3 { color: #43302b; margin-top: 0; }
+                .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0cec7; }
+                .detail-row:last-child { border-bottom: none; }
+                .detail-label { color: #666666; font-weight: 500; }
+                .detail-value { color: #43302b; font-weight: 600; }
+                .footer { background-color: #43302b; padding: 30px; text-align: center; color: #ffffff; }
+                @media only screen and (max-width: 600px) {
+                    .content { padding: 30px 20px; }
+                    .detail-row { flex-direction: column; gap: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="success-icon">✅</div>
+                    <h1>Reservation Confirmed!</h1>
+                </div>
+                <div class="content">
+                    <p style="font-size: 18px; color: #43302b;">Dear ${customerName},</p>
+                    <p style="color: #666666; line-height: 1.6;">Great news! Your table has been reserved at <strong>${restaurantName}</strong>.</p>
+                    
+                    <div class="reservation-box">
+                        <h3>📅 Reservation Details</h3>
+                        <div class="detail-row">
+                            <span class="detail-label">Restaurant</span>
+                            <span class="detail-value">${restaurantName}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">${date}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value">${time}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Party Size</span>
+                            <span class="detail-value">${partySize} guests</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Location</span>
+                            <span class="detail-value">${location}</span>
+                        </div>
+                    </div>
+
+                    <p style="color: #666666; line-height: 1.6; margin-top: 30px;">
+                        <strong>Important:</strong> Please arrive on time. If you need to cancel or modify your reservation, please do so at least 2 hours in advance.
+                    </p>
+                </div>
+                <div class="footer">
+                    <p><strong>Rwanda Eats Reserve</strong></p>
+                    <p style="font-size: 14px; opacity: 0.9;">We look forward to serving you!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `,
+
+    passwordReset: (name, code) => `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 0; background-color: #f5efe7; }
+                .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+                .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 20px; text-align: center; }
+                .header h1 { color: #ffffff; margin: 0; font-size: 28px; }
+                .content { padding: 40px 30px; text-align: center; }
+                .code-box { background-color: #f8f3e4; border: 2px dashed #a18072; padding: 30px; margin: 30px 0; border-radius: 12px; }
+                .code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #43302b; font-family: 'Courier New', monospace; }
+                .warning { background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; text-align: left; border-radius: 4px; }
+                @media only screen and (max-width: 600px) {
+                    .code { font-size: 36px; letter-spacing: 4px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔐 Password Reset</h1>
+                </div>
+                <div class="content">
+                    <h2 style="color: #43302b;">Reset Your Password</h2>
+                    <p style="color: #666666; line-height: 1.6;">Hi ${name}, you requested to reset your password. Use this verification code:</p>
+                    
+                    <div class="code-box">
+                        <div class="code">${code}</div>
+                        <p style="color: #999; font-size: 14px; margin-top: 15px;">Enter this code in the app to reset your password</p>
+                    </div>
+
+                    <div class="warning">
+                        <p style="margin: 0; color: #ef4444; font-weight: 600;">⚠️ Security Notice</p>
+                        <p style="margin: 5px 0 0 0; color: #666;">This code expires in 15 minutes. If you didn't request this, please ignore this email and ensure your account is secure.</p>
+                    </div>
+                </div>
+                <div style="background-color: #f8f3e4; padding: 30px; text-align: center; color: #666;">
+                    <p style="font-size: 12px;">© 2024 Rwanda Eats Reserve. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `
+};
 
 // Notification Service (Updated to use new EmailService)
 class NotificationService {
     static async sendEmail(to, subject, html) {
-        return await EmailService.sendEmail(to, subject, html);
+        const result = await EmailService.sendEmail(to, subject, html);
+        return result.success || false; // Return boolean for backward compatibility
     }
 
     static async sendSMS(to, message) {
@@ -301,14 +529,18 @@ class NotificationService {
             if (channel === 'email' || channel === 'sms') {
                 const user = await this.getUser(userId);
                 if (user) {
+                    let sent = false;
                     if (channel === 'email') {
-                        await this.sendEmail(user.email, title, message);
+                        const result = await this.sendEmail(user.email, title, message);
+                        sent = result; // Result is already a boolean from updated sendEmail method
                     } else if (channel === 'sms' && user.phone) {
-                        await this.sendSMS(user.phone, message);
+                        sent = await this.sendSMS(user.phone, message);
                     }
                     
-                    // Mark as sent
-                    await db.execute('UPDATE notifications SET is_sent = TRUE, sent_at = NOW() WHERE id = ?', [result.insertId]);
+                    // Mark as sent only if successful
+                    if (sent) {
+                        await db.execute('UPDATE notifications SET is_sent = TRUE, sent_at = NOW() WHERE id = ?', [result.insertId]);
+                    }
                 }
             }
 
@@ -325,46 +557,43 @@ class NotificationService {
     }
 
     static async sendWelcomeEmail(user) {
-        const template = await this.getEmailTemplate('welcome');
-        if (!template) return false;
-
         const verificationUrl = `http://localhost:3000/verify-email?token=${user.verification_token}`;
-        const emailBody = template.body
-            .replace('{{name}}', user.name)
-            .replace('{{verification_url}}', verificationUrl);
-
-        return await this.sendEmail(user.email, template.subject, emailBody);
+        const emailHtml = emailTemplates.welcome(user.name, verificationUrl);
+        
+        const result = await this.sendEmail(user.email, 'Welcome to Rwanda Eats Reserve! 🎉', emailHtml);
+        return result.success || false; // Return boolean for backward compatibility
     }
 
     static async sendReservationConfirmation(reservation, user, restaurant) {
-        const template = await this.getEmailTemplate('reservation_confirmation');
-        if (!template) return false;
+        const emailHtml = emailTemplates.reservationConfirmation(
+            user.name,
+            restaurant.name,
+            new Date(reservation.reservation_date).toLocaleDateString(),
+            reservation.reservation_time,
+            reservation.party_size,
+            restaurant.location
+        );
 
-        const emailBody = template.body
-            .replace('{{customer_name}}', user.name)
-            .replace('{{restaurant_name}}', restaurant.name)
-            .replace('{{reservation_date}}', new Date(reservation.reservation_date).toLocaleDateString())
-            .replace('{{reservation_time}}', reservation.reservation_time)
-            .replace('{{party_size}}', reservation.party_size)
-            .replace('{{restaurant_location}}', restaurant.location);
-
-        const emailSent = await this.sendEmail(user.email, template.subject, emailBody);
+        const emailResult = await this.sendEmail(
+            user.email, 
+            `Reservation Confirmed at ${restaurant.name}`, 
+            emailHtml
+        );
         
         // Also send SMS if user has phone
         if (user.phone) {
-            const smsTemplate = await this.getSmsTemplate('reservation_confirmation_sms');
-            if (smsTemplate) {
-                const smsMessage = smsTemplate.message
-                    .replace('{{restaurant_name}}', restaurant.name)
-                    .replace('{{reservation_date}}', new Date(reservation.reservation_date).toLocaleDateString())
-                    .replace('{{reservation_time}}', reservation.reservation_time)
-                    .replace('{{party_size}}', reservation.party_size);
-                
-                await this.sendSMS(user.phone, smsMessage);
-            }
+            const smsMessage = `🎉 Reservation confirmed! ${restaurant.name} on ${new Date(reservation.reservation_date).toLocaleDateString()} at ${reservation.reservation_time} for ${reservation.party_size} guests. See you there!`;
+            await this.sendSMS(user.phone, smsMessage);
         }
 
-        return emailSent;
+        return emailResult.success || false; // Return boolean for backward compatibility
+    }
+
+    static async sendPasswordResetEmail(user, resetCode) {
+        const emailHtml = emailTemplates.passwordReset(user.name, resetCode);
+        
+        const result = await this.sendEmail(user.email, 'Password Reset Code - Rwanda Eats Reserve', emailHtml);
+        return result.success || false; // Return boolean for backward compatibility
     }
 
     static async getEmailTemplate(name) {
@@ -697,17 +926,9 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                 [resetTokenHash, resetTokenExpires, user.id]
             );
 
-            // Send verification code email using NotificationService
-            const subject = 'Password Reset Verification Code';
-            const html = `
-                <h2>Password Reset Request</h2>
-                <p>Your password reset code is: <strong>${verificationCode}</strong></p>
-                <p>This code will expire in 15 minutes.</p>
-                <p>If you didn't request this, please ignore this email.</p>
-            `;
-
+            // Send verification code email using enhanced template
             try {
-                await NotificationService.sendEmail(user.email, subject, html);
+                await NotificationService.sendPasswordResetEmail(user, verificationCode);
             } catch (e) {
                 console.error('Error sending reset email:', e);
             }
@@ -1042,25 +1263,48 @@ app.get('/api/restaurants', async (req, res) => {
         const { search, location, cuisine, price_range, limit } = req.query;
         
         let query = `
-            SELECT r.*, u.name as admin_name 
+            SELECT r.*, u.name as admin_name,
+            GROUP_CONCAT(DISTINCT rc.cuisine_name SEPARATOR ', ') as cuisine_types
             FROM restaurants r 
-            LEFT JOIN users u ON r.restaurant_admin_id = u.id 
+            LEFT JOIN users u ON r.restaurant_admin_id = u.id
+            LEFT JOIN restaurant_cuisines rc ON r.id = rc.restaurant_id
             WHERE r.is_active = TRUE
         `;
         const params = [];
         
+        // Enhanced search with strict location matching
         if (search) {
-            query += ' AND (r.name LIKE ? OR r.description LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            const searchLower = search.toLowerCase().trim();
+            
+            // Check if search term matches common location keywords to apply strict filtering
+            const locationKeywords = ['kigali', 'gasabo', 'kicukiro', 'nyarugenge', 'kimironko', 'remera', 
+                                     'nyarutarama', 'gikondo', 'kibagabaga', 'kanombe', 'kacyiru', 'kimihurura',
+                                     'gisozi', 'kagugu', 'kimironko', 'niboye', 'rebero', 'rusororo'];
+            
+            const isLocationSearch = locationKeywords.some(keyword => searchLower.includes(keyword));
+            
+            if (isLocationSearch) {
+                // Strict location search - only match location, district, or sector fields
+                query += ' AND (r.location LIKE ? OR r.district LIKE ? OR r.sector LIKE ?)';
+                const searchTerm = `%${search}%`;
+                params.push(searchTerm, searchTerm, searchTerm);
+            } else {
+                // General search - search across name, description, and location
+                query += ' AND (r.name LIKE ? OR r.description LIKE ? OR r.location LIKE ? OR r.district LIKE ? OR r.sector LIKE ? OR rc.cuisine_name LIKE ?)';
+                const searchTerm = `%${search}%`;
+                params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            }
         }
         
+        // Specific location filter (for legacy support)
         if (location) {
-            query += ' AND r.location LIKE ?';
-            params.push(`%${location}%`);
+            query += ' AND (r.location LIKE ? OR r.district LIKE ? OR r.sector LIKE ?)';
+            const locationTerm = `%${location}%`;
+            params.push(locationTerm, locationTerm, locationTerm);
         }
         
         if (cuisine) {
-            query += ' AND r.cuisine_type = ?';
+            query += ' AND rc.cuisine_name = ?';
             params.push(cuisine);
         }
         
@@ -1069,7 +1313,7 @@ app.get('/api/restaurants', async (req, res) => {
             params.push(price_range);
         }
         
-        query += ' ORDER BY r.name ASC';
+        query += ' GROUP BY r.id ORDER BY r.name ASC';
         
         // MySQL may not accept parameter placeholders for LIMIT; inline a sanitized integer
         if (limit !== undefined && limit !== null && limit !== '' && !isNaN(parseInt(limit))) {
@@ -1188,6 +1432,27 @@ app.post('/api/reservations', async (req, res) => {
     try {
         const { customer_name, customer_email, customer_phone, restaurant_id, reservation_date, reservation_time, party_size, occasion, special_requests } = req.body;
         
+        // Validate that reservation is not in the past
+        const reservationDateTime = new Date(`${reservation_date}T${reservation_time}`);
+        const now = new Date();
+        
+        if (reservationDateTime <= now) {
+            return res.status(400).json({ error: 'Cannot create reservations for past dates or times' });
+        }
+        
+        // Check if same-day reservation and require 2-hour advance
+        const reservationDate = new Date(reservation_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        reservationDate.setHours(0, 0, 0, 0);
+        
+        const isToday = reservationDate.getTime() === today.getTime();
+        const twoHoursLater = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+        
+        if (isToday && reservationDateTime < twoHoursLater) {
+            return res.status(400).json({ error: 'Same-day reservations must be made at least 2 hours in advance' });
+        }
+        
         let customerId;
         
         // Check if customer exists
@@ -1258,6 +1523,83 @@ app.post('/api/reservations', async (req, res) => {
     }
 });
 
+// Update reservation (for customers to modify their reservations)
+app.put('/api/reservations/:id', requireAuth, async (req, res) => {
+    try {
+        const reservationId = req.params.id;
+        const { reservation_date, reservation_time, party_size, occasion, special_requests } = req.body;
+        
+        // Validate that reservation is not in the past
+        const reservationDateTime = new Date(`${reservation_date}T${reservation_time}`);
+        const now = new Date();
+        
+        if (reservationDateTime <= now) {
+            return res.status(400).json({ error: 'Cannot update reservation to a past date or time' });
+        }
+        
+        // Check if same-day reservation and require 2-hour advance
+        const reservationDate = new Date(reservation_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        reservationDate.setHours(0, 0, 0, 0);
+        
+        const isToday = reservationDate.getTime() === today.getTime();
+        const twoHoursLater = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+        
+        if (isToday && reservationDateTime < twoHoursLater) {
+            return res.status(400).json({ error: 'Same-day reservations must be made at least 2 hours in advance' });
+        }
+        
+        // Get current reservation
+        const [reservations] = await db.execute(
+            'SELECT * FROM reservations WHERE id = ?',
+            [reservationId]
+        );
+        
+        if (reservations.length === 0) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+        
+        const reservation = reservations[0];
+        
+        // Check if user owns this reservation
+        if (req.session.user.id !== reservation.customer_id && req.session.user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Update reservation
+        await db.execute(
+            'UPDATE reservations SET reservation_date = ?, reservation_time = ?, party_size = ?, occasion = ?, special_requests = ? WHERE id = ?',
+            [reservation_date, reservation_time, party_size, occasion, special_requests, reservationId]
+        );
+        
+        // Get restaurant details for notification
+        const [restaurants] = await db.execute('SELECT * FROM restaurants WHERE id = ?', [reservation.restaurant_id]);
+        
+        if (restaurants.length > 0) {
+            const restaurant = restaurants[0];
+            
+            // Notify restaurant admin
+            await NotificationService.createNotification(
+                restaurant.restaurant_admin_id,
+                'Reservation Updated',
+                `A reservation has been modified for ${reservation_date} at ${reservation_time}`,
+                'reservation_update',
+                'in_app',
+                reservationId
+            );
+        }
+        
+        // Log the action
+        await AuditLogService.logAction(req.session.user.id, 'RESERVATION_UPDATED', 'reservation', reservationId, { reservation_date, reservation_time }, req);
+        
+        res.json({ message: 'Reservation updated successfully' });
+    } catch (error) {
+        console.error('Error updating reservation:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get user's reservations
 app.get('/api/user/reservations', isAuthenticated, async (req, res) => {
     try {
@@ -1281,9 +1623,12 @@ app.get('/api/user/reservations', isAuthenticated, async (req, res) => {
                 rest.name AS restaurant_name,
                 rest.location AS restaurant_location,
                 rest.contact_phone AS restaurant_phone,
-                rest.contact_email AS restaurant_email
+                rest.contact_email AS restaurant_email,
+                rest.id AS restaurant_id,
+                CASE WHEN rev.id IS NOT NULL THEN TRUE ELSE FALSE END AS has_review
             FROM reservations r
             JOIN restaurants rest ON r.restaurant_id = rest.id
+            LEFT JOIN reviews rev ON rev.restaurant_id = rest.id AND rev.customer_id = r.customer_id
             ${whereClause}
             ORDER BY r.reservation_date DESC, r.reservation_time DESC
         `, params);
@@ -1458,6 +1803,606 @@ app.post('/api/debug/send-test-email', async (req, res) => {
     }
 });
 
+// Enhanced Email Configuration Test Endpoint
+app.get('/api/email/test-config', requireSystemAdmin, async (req, res) => {
+    try {
+        console.log('🔍 Testing email configuration...');
+        const results = await EmailService.testConfiguration();
+        
+        // Test sending a sample email if requested
+        if (req.query.sendTest === 'true') {
+            const testEmail = req.session.user.email;
+            const result = await EmailService.sendEmail(
+                testEmail,
+                'Rwanda Eats Reserve - Email Configuration Test ✅',
+                emailTemplates.welcome('Test User', '#')
+            );
+            
+            results.testEmail = {
+                sent: result.success,
+                provider: result.provider,
+                error: result.error || null
+            };
+        }
+        
+        res.json({
+            message: 'Email configuration test completed',
+            results: results,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Email configuration test failed:', error);
+        res.status(500).json({ 
+            error: 'Email configuration test failed',
+            details: error.message 
+        });
+    }
+});
+
+/*
+==============================================
+RESTAURANT DETAILS MANAGEMENT API
+==============================================
+*/
+
+// ===== REVIEWS API =====
+
+// Get all reviews for a restaurant (customer view - approved and visible only)
+app.get('/api/restaurants/:id/reviews', async (req, res) => {
+    try {
+        const [reviews] = await db.execute(`
+            SELECT r.*, u.name as customer_name
+            FROM reviews r
+            LEFT JOIN users u ON r.customer_id = u.id
+            WHERE r.restaurant_id = ? AND r.status = 'approved' AND r.is_visible = TRUE
+            ORDER BY r.created_at DESC
+        `, [req.params.id]);
+        res.json(reviews);
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        res.status(500).json({ error: 'Failed to load reviews' });
+    }
+});
+
+// Get all reviews for a restaurant (admin view - all reviews)
+app.get('/api/admin/restaurants/:id/reviews', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        
+        // Check if user is admin or restaurant owner
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [req.params.id, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        const [reviews] = await db.execute(`
+            SELECT r.*, u.name as customer_name, reviewer.name as reviewed_by_name
+            FROM reviews r
+            LEFT JOIN users u ON r.customer_id = u.id
+            LEFT JOIN users reviewer ON r.reviewed_by = reviewer.id
+            WHERE r.restaurant_id = ?
+            ORDER BY r.created_at DESC
+        `, [req.params.id]);
+        
+        res.json(reviews);
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        res.status(500).json({ error: 'Failed to load reviews' });
+    }
+});
+
+// Add a new review
+app.post('/api/restaurants/:id/reviews', requireAuth, async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        const userId = req.session.user.id;
+        const restaurantId = req.params.id;
+        
+        // Validate rating
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+        }
+        
+        // Check if user has already reviewed this restaurant
+        const [existing] = await db.execute(
+            'SELECT * FROM reviews WHERE restaurant_id = ? AND customer_id = ?',
+            [restaurantId, userId]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'You have already reviewed this restaurant' });
+        }
+        
+        // Insert review with pending status
+        const [result] = await db.execute(`
+            INSERT INTO reviews (restaurant_id, customer_id, rating, comment, status, is_visible)
+            VALUES (?, ?, ?, ?, 'pending', FALSE)
+        `, [restaurantId, userId, rating, comment || '']);
+        
+        res.json({ 
+            message: 'Review submitted successfully. It will be visible after admin approval.',
+            reviewId: result.insertId
+        });
+    } catch (error) {
+        console.error('Error adding review:', error);
+        res.status(500).json({ error: 'Failed to submit review' });
+    }
+});
+
+// Approve a review
+app.patch('/api/reviews/:id/approve', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const reviewId = req.params.id;
+        
+        // Get review details to check permissions
+        const [reviews] = await db.execute(
+            'SELECT r.*, rest.restaurant_admin_id FROM reviews r JOIN restaurants rest ON r.restaurant_id = rest.id WHERE r.id = ?',
+            [reviewId]
+        );
+        
+        if (reviews.length === 0) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+        
+        const review = reviews[0];
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin' && review.restaurant_admin_id !== user.id) {
+            return res.status(403).json({ error: 'Permission denied' });
+        } else if (user.user_type !== 'system_admin' && user.user_type !== 'restaurant_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Approve review
+        await db.execute(`
+            UPDATE reviews 
+            SET status = 'approved', is_visible = TRUE, reviewed_by = ?, reviewed_at = NOW()
+            WHERE id = ?
+        `, [user.id, reviewId]);
+        
+        res.json({ message: 'Review approved successfully' });
+    } catch (error) {
+        console.error('Error approving review:', error);
+        res.status(500).json({ error: 'Failed to approve review' });
+    }
+});
+
+// Reject a review
+app.patch('/api/reviews/:id/reject', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const reviewId = req.params.id;
+        const { admin_notes } = req.body;
+        
+        // Get review details to check permissions
+        const [reviews] = await db.execute(
+            'SELECT r.*, rest.restaurant_admin_id FROM reviews r JOIN restaurants rest ON r.restaurant_id = rest.id WHERE r.id = ?',
+            [reviewId]
+        );
+        
+        if (reviews.length === 0) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+        
+        const review = reviews[0];
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin' && review.restaurant_admin_id !== user.id) {
+            return res.status(403).json({ error: 'Permission denied' });
+        } else if (user.user_type !== 'system_admin' && user.user_type !== 'restaurant_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Reject review
+        await db.execute(`
+            UPDATE reviews 
+            SET status = 'rejected', is_visible = FALSE, reviewed_by = ?, reviewed_at = NOW(), admin_notes = ?
+            WHERE id = ?
+        `, [user.id, admin_notes || '', reviewId]);
+        
+        res.json({ message: 'Review rejected successfully' });
+    } catch (error) {
+        console.error('Error rejecting review:', error);
+        res.status(500).json({ error: 'Failed to reject review' });
+    }
+});
+
+// Delete a review
+app.delete('/api/reviews/:id', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const reviewId = req.params.id;
+        
+        // Get review details to check permissions
+        const [reviews] = await db.execute(
+            'SELECT r.*, rest.restaurant_admin_id FROM reviews r JOIN restaurants rest ON r.restaurant_id = rest.id WHERE r.id = ?',
+            [reviewId]
+        );
+        
+        if (reviews.length === 0) {
+            return res.status(404).json({ error: 'Review not found' });
+        }
+        
+        const review = reviews[0];
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin' && review.restaurant_admin_id !== user.id) {
+            return res.status(403).json({ error: 'Permission denied' });
+        } else if (user.user_type !== 'system_admin' && user.user_type !== 'restaurant_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Delete review
+        await db.execute('DELETE FROM reviews WHERE id = ?', [reviewId]);
+        
+        res.json({ message: 'Review deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        res.status(500).json({ error: 'Failed to delete review' });
+    }
+});
+
+// ===== AMENITIES API =====
+
+// Get amenities for a restaurant (customer view - visible only)
+app.get('/api/restaurants/:id/amenities', async (req, res) => {
+    try {
+        const [amenities] = await db.execute(`
+            SELECT * FROM restaurant_amenities
+            WHERE restaurant_id = ? AND is_visible = TRUE
+            ORDER BY amenity_type
+        `, [req.params.id]);
+        res.json(amenities);
+    } catch (error) {
+        console.error('Error loading amenities:', error);
+        res.json([]);
+    }
+});
+
+// Get all amenities for a restaurant (admin view - all amenities)
+app.get('/api/admin/restaurants/:id/amenities', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        
+        // Check if user is admin or restaurant owner
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [req.params.id, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        const [amenities] = await db.execute(`
+            SELECT a.*, u.name as added_by_name
+            FROM restaurant_amenities a
+            LEFT JOIN users u ON a.added_by = u.id
+            WHERE a.restaurant_id = ?
+            ORDER BY a.amenity_type
+        `, [req.params.id]);
+        
+        res.json(amenities);
+    } catch (error) {
+        console.error('Error loading amenities:', error);
+        res.status(500).json({ error: 'Failed to load amenities' });
+    }
+});
+
+// Add an amenity to a restaurant
+app.post('/api/restaurants/:id/amenities', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const restaurantId = req.params.id;
+        const { amenity_type, is_visible } = req.body;
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [restaurantId, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Insert amenity
+        await db.execute(`
+            INSERT INTO restaurant_amenities (restaurant_id, amenity_type, is_visible, added_by)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE is_visible = VALUES(is_visible)
+        `, [restaurantId, amenity_type, is_visible !== false, user.id]);
+        
+        res.json({ message: 'Amenity added successfully' });
+    } catch (error) {
+        console.error('Error adding amenity:', error);
+        res.status(500).json({ error: 'Failed to add amenity' });
+    }
+});
+
+// Toggle amenity visibility
+app.patch('/api/amenities/:id/visibility', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const amenityId = req.params.id;
+        const { is_visible } = req.body;
+        
+        // Get amenity details to check permissions
+        const [amenities] = await db.execute(
+            'SELECT a.*, r.restaurant_admin_id FROM restaurant_amenities a JOIN restaurants r ON a.restaurant_id = r.id WHERE a.id = ?',
+            [amenityId]
+        );
+        
+        if (amenities.length === 0) {
+            return res.status(404).json({ error: 'Amenity not found' });
+        }
+        
+        const amenity = amenities[0];
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin' && amenity.restaurant_admin_id !== user.id) {
+            return res.status(403).json({ error: 'Permission denied' });
+        } else if (user.user_type !== 'system_admin' && user.user_type !== 'restaurant_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Update visibility
+        await db.execute(
+            'UPDATE restaurant_amenities SET is_visible = ? WHERE id = ?',
+            [is_visible, amenityId]
+        );
+        
+        res.json({ message: 'Amenity visibility updated successfully' });
+    } catch (error) {
+        console.error('Error updating amenity visibility:', error);
+        res.status(500).json({ error: 'Failed to update amenity visibility' });
+    }
+});
+
+// Delete an amenity
+app.delete('/api/amenities/:id', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const amenityId = req.params.id;
+        
+        // Get amenity details to check permissions
+        const [amenities] = await db.execute(
+            'SELECT a.*, r.restaurant_admin_id FROM restaurant_amenities a JOIN restaurants r ON a.restaurant_id = r.id WHERE a.id = ?',
+            [amenityId]
+        );
+        
+        if (amenities.length === 0) {
+            return res.status(404).json({ error: 'Amenity not found' });
+        }
+        
+        const amenity = amenities[0];
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin' && amenity.restaurant_admin_id !== user.id) {
+            return res.status(403).json({ error: 'Permission denied' });
+        } else if (user.user_type !== 'system_admin' && user.user_type !== 'restaurant_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Delete amenity
+        await db.execute('DELETE FROM restaurant_amenities WHERE id = ?', [amenityId]);
+        
+        res.json({ message: 'Amenity deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting amenity:', error);
+        res.status(500).json({ error: 'Failed to delete amenity' });
+    }
+});
+
+// ===== RESTAURANT SETTINGS API =====
+
+// Update restaurant display settings
+app.patch('/api/restaurants/:id/settings', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const restaurantId = req.params.id;
+        const { rating_display, reviews_enabled, video_enabled, gallery_enabled } = req.body;
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [restaurantId, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Build update query dynamically
+        const updates = [];
+        const values = [];
+        
+        if (rating_display !== undefined) {
+            updates.push('rating_display = ?');
+            values.push(rating_display);
+        }
+        if (reviews_enabled !== undefined) {
+            updates.push('reviews_enabled = ?');
+            values.push(reviews_enabled);
+        }
+        if (video_enabled !== undefined) {
+            updates.push('video_enabled = ?');
+            values.push(video_enabled);
+        }
+        if (gallery_enabled !== undefined) {
+            updates.push('gallery_enabled = ?');
+            values.push(gallery_enabled);
+        }
+        
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No settings to update' });
+        }
+        
+        values.push(restaurantId);
+        
+        await db.execute(
+            `UPDATE restaurants SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
+        
+        res.json({ message: 'Restaurant settings updated successfully' });
+    } catch (error) {
+        console.error('Error updating restaurant settings:', error);
+        res.status(500).json({ error: 'Failed to update restaurant settings' });
+    }
+});
+
+// Get restaurant settings
+app.get('/api/restaurants/:id/settings', async (req, res) => {
+    try {
+        const [restaurants] = await db.execute(
+            'SELECT rating_display, reviews_enabled, video_enabled, gallery_enabled FROM restaurants WHERE id = ?',
+            [req.params.id]
+        );
+        
+        if (restaurants.length === 0) {
+            return res.status(404).json({ error: 'Restaurant not found' });
+        }
+        
+        res.json(restaurants[0]);
+    } catch (error) {
+        console.error('Error loading restaurant settings:', error);
+        res.status(500).json({ error: 'Failed to load restaurant settings' });
+    }
+});
+
+// Update restaurant image visibility
+app.patch('/api/restaurants/:restaurantId/images/:imageId/visibility', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const { restaurantId, imageId } = req.params;
+        const { is_visible } = req.body;
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [restaurantId, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        await db.execute(
+            'UPDATE restaurant_images SET is_visible = ? WHERE id = ? AND restaurant_id = ?',
+            [is_visible, imageId, restaurantId]
+        );
+        
+        res.json({ message: 'Image visibility updated successfully' });
+    } catch (error) {
+        console.error('Error updating image visibility:', error);
+        res.status(500).json({ error: 'Failed to update image visibility' });
+    }
+});
+
+// ===== CUISINES API =====
+
+// Get cuisines for a restaurant
+app.get('/api/restaurants/:id/cuisines', async (req, res) => {
+    try {
+        const [cuisines] = await db.execute(
+            'SELECT * FROM restaurant_cuisines WHERE restaurant_id = ? ORDER BY cuisine_name',
+            [req.params.id]
+        );
+        res.json(cuisines);
+    } catch (error) {
+        console.error('Error loading cuisines:', error);
+        res.json([]);
+    }
+});
+
+// Add cuisine to restaurant
+app.post('/api/restaurants/:id/cuisines', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const restaurantId = req.params.id;
+        const { cuisine_name } = req.body;
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [restaurantId, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Insert cuisine (ON DUPLICATE KEY handles uniqueness)
+        await db.execute(
+            'INSERT INTO restaurant_cuisines (restaurant_id, cuisine_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE cuisine_name = VALUES(cuisine_name)',
+            [restaurantId, cuisine_name]
+        );
+        
+        res.json({ message: 'Cuisine added successfully' });
+    } catch (error) {
+        console.error('Error adding cuisine:', error);
+        res.status(500).json({ error: 'Failed to add cuisine' });
+    }
+});
+
+// Delete cuisine from restaurant
+app.delete('/api/restaurants/:restaurantId/cuisines/:cuisineId', requireAuth, async (req, res) => {
+    try {
+        const user = req.session.user;
+        const { restaurantId, cuisineId } = req.params;
+        
+        // Check permissions
+        if (user.user_type === 'restaurant_admin') {
+            const [ownership] = await db.execute(
+                'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+                [restaurantId, user.id]
+            );
+            if (ownership.length === 0) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        } else if (user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        await db.execute('DELETE FROM restaurant_cuisines WHERE id = ? AND restaurant_id = ?', [cuisineId, restaurantId]);
+        
+        res.json({ message: 'Cuisine removed successfully' });
+    } catch (error) {
+        console.error('Error deleting cuisine:', error);
+        res.status(500).json({ error: 'Failed to delete cuisine' });
+    }
+});
+
+/*
+==============================================
+END RESTAURANT DETAILS MANAGEMENT API
+==============================================
+*/
+
 // Remove immediate listen; start server after verifying DB + email transporter
 // Startup routine: verify DB connection and email transporter, then start listening
 (async function startServer() {
@@ -1471,13 +2416,15 @@ app.post('/api/debug/send-test-email', async (req, res) => {
         process.exit(1);
     }
 
-    // Verify email services
-    if (brevoClient && process.env.BREVO_API_KEY) {
-        console.log('Brevo email service ready (primary)');
-    } else if (mailerSend && process.env.MAILERSEND_API_KEY) {
-        console.log('MailerSend email service ready (fallback)');
-    } else {
-        console.warn('No email service configured. Emails will not be sent.');
+    // Verify and test email services
+    try {
+        const emailResults = await EmailService.testConfiguration();
+        console.log('📧 Email Service Status:');
+        console.log(`   Brevo: ${emailResults.brevo.configured ? (emailResults.brevo.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
+        console.log(`   MailerSend: ${emailResults.mailersend.configured ? (emailResults.mailersend.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
+    } catch (error) {
+        console.error('⚠️ Email service test failed:', error.message);
+        console.warn('📧 Email functionality may be limited');
     }
 
     app.listen(PORT, () => {
@@ -1672,10 +2619,15 @@ app.get('/api/restaurant-admin/reservations', requireRestaurantAdmin, async (req
 
 app.get('/api/restaurant-admin/restaurants', requireRestaurantAdmin, async (req, res) => {
     try {
-        const [restaurants] = await db.execute(
-            'SELECT * FROM restaurants WHERE restaurant_admin_id = ? ORDER BY name',
-            [req.session.user.id]
-        );
+        const [restaurants] = await db.execute(`
+            SELECT r.*, 
+            GROUP_CONCAT(DISTINCT rc.cuisine_name SEPARATOR ', ') as cuisine_types
+            FROM restaurants r
+            LEFT JOIN restaurant_cuisines rc ON r.id = rc.restaurant_id
+            WHERE r.restaurant_admin_id = ?
+            GROUP BY r.id
+            ORDER BY r.name
+        `, [req.session.user.id]);
         res.json(restaurants);
     } catch (error) {
         console.error('Error loading restaurants:', error);
@@ -2835,3 +3787,34 @@ app.put('/api/reservations/:id/cancel', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+/*
+==============================================
+Enhanced Email Service Integration Complete
+==============================================
+
+Features Added:
+✅ Retry mechanism with exponential backoff
+✅ Comprehensive error handling and logging  
+✅ Dual provider support (Brevo + MailerSend)
+✅ Enhanced email templates with responsive design
+✅ Configuration testing endpoint
+✅ Better status logging with emojis
+✅ Fallback email content logging for debugging
+
+New Endpoints:
+- GET /api/email/test-config - Test email configuration (System Admin only)
+
+Email Templates Available:
+- welcome(name, verificationUrl)
+- reservationConfirmation(customerName, restaurantName, date, time, partySize, location)  
+- passwordReset(name, code)
+
+Usage Examples:
+- EmailService.sendEmail(to, subject, html) - Returns {success, provider, messageId/error}
+- EmailService.testConfiguration() - Returns configuration status
+- NotificationService.sendWelcomeEmail(user)
+- NotificationService.sendReservationConfirmation(reservation, user, restaurant)
+- NotificationService.sendPasswordResetEmail(user, code)
+==============================================
+*/

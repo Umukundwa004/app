@@ -265,12 +265,12 @@ class SystemAdmin {
     switchTab(tabName) {
         // Update tab buttons
         document.querySelectorAll('.tab-button').forEach(button => {
-            button.classList.remove('border-brown-600', 'text-brown-600');
-            button.classList.add('border-transparent', 'text-brown-500');
+            button.classList.remove('border-brown-600', 'text-gray-600');
+            button.classList.add('border-transparent', 'text-gray-500');
         });
 
-        document.getElementById(`${tabName}-tab`).classList.add('border-brown-600', 'text-brown-600');
-        document.getElementById(`${tabName}-tab`).classList.remove('border-transparent', 'text-brown-500');
+        document.getElementById(`${tabName}-tab`).classList.add('border-brown-600', 'text-gray-600');
+        document.getElementById(`${tabName}-tab`).classList.remove('border-transparent', 'text-gray-500');
 
         // Hide all tab content
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -374,7 +374,7 @@ class SystemAdmin {
     displayUserChart(usersByType) {
         const container = document.getElementById('user-chart');
         if (!usersByType || Object.keys(usersByType).length === 0) {
-            container.innerHTML = '<p class="text-brown-500 text-center">No user data available</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center">No user data available</p>';
             return;
         }
 
@@ -399,8 +399,8 @@ class SystemAdmin {
             html += `
                 <div>
                     <div class="flex justify-between mb-1">
-                        <span class="text-sm font-medium text-brown-700">${label}</span>
-                        <span class="text-sm text-brown-600">${count} (${percentage}%)</span>
+                        <span class="text-sm font-medium text-gray-700">${label}</span>
+                        <span class="text-sm text-gray-600">${count} (${percentage}%)</span>
                     </div>
                     <div class="w-full bg-brown-200 rounded-full h-2.5">
                         <div class="${colorClass} h-2.5 rounded-full transition-all" style="width: ${percentage}%"></div>
@@ -415,7 +415,7 @@ class SystemAdmin {
     displayReservationChart(reservationsByStatus) {
         const container = document.getElementById('reservation-chart');
         if (!reservationsByStatus || Object.keys(reservationsByStatus).length === 0) {
-            container.innerHTML = '<p class="text-brown-500 text-center">No reservation data available</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center">No reservation data available</p>';
             return;
         }
 
@@ -442,8 +442,8 @@ class SystemAdmin {
             html += `
                 <div>
                     <div class="flex justify-between mb-1">
-                        <span class="text-sm font-medium text-brown-700">${label}</span>
-                        <span class="text-sm text-brown-600">${count} (${percentage}%)</span>
+                        <span class="text-sm font-medium text-gray-700">${label}</span>
+                        <span class="text-sm text-gray-600">${count} (${percentage}%)</span>
                     </div>
                     <div class="w-full bg-brown-200 rounded-full h-2.5">
                         <div class="${colorClass} h-2.5 rounded-full transition-all" style="width: ${percentage}%"></div>
@@ -458,7 +458,7 @@ class SystemAdmin {
     displayRecentReservations(reservations) {
         const container = document.getElementById('system-alerts');
         if (!reservations || reservations.length === 0) {
-            container.innerHTML = '<p class="text-brown-500 text-sm">No recent reservations</p>';
+            container.innerHTML = '<p class="text-gray-500 text-sm">No recent reservations</p>';
             return;
         }
 
@@ -475,14 +475,14 @@ class SystemAdmin {
             const statusClass = statusColors[reservation.status] || 'bg-gray-100 text-gray-800';
             
             return `
-                <div class="flex items-start space-x-3 p-3 bg-white rounded border border-brown-200">
+                <div class="flex items-start space-x-3 p-3 bg-white rounded border border-gray-200">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-calendar-check text-brown-600"></i>
+                        <i class="fas fa-calendar-check text-gray-600"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-brown-900">${reservation.customer_name}</p>
-                        <p class="text-xs text-brown-600">${reservation.restaurant_name}</p>
-                        <p class="text-xs text-brown-500">${date} at ${time} • ${reservation.party_size} guests</p>
+                        <p class="text-sm font-medium text-gray-900">${reservation.customer_name}</p>
+                        <p class="text-xs text-gray-600">${reservation.restaurant_name}</p>
+                        <p class="text-xs text-gray-500">${date} at ${time} • ${reservation.party_size} guests</p>
                     </div>
                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
                         ${reservation.status}
@@ -498,16 +498,16 @@ class SystemAdmin {
         const container = document.getElementById('recent-users');
         
         if (!users || users.length === 0) {
-            container.innerHTML = '<p class="text-brown-500 text-center">No recent users</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center">No recent users</p>';
             return;
         }
 
         container.innerHTML = users.map(user => `
-            <div class="flex justify-between items-center p-3 bg-white rounded-lg border border-brown-200">
+            <div class="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-200">
                 <div>
-                    <div class="font-medium text-brown-800">${user.name}</div>
-                    <div class="text-sm text-brown-600">${user.email}</div>
-                    <div class="text-xs text-brown-500 capitalize">${user.user_type.replace('_', ' ')}</div>
+                    <div class="font-medium text-gray-900">${user.name}</div>
+                    <div class="text-sm text-gray-600">${user.email}</div>
+                    <div class="text-xs text-gray-500 capitalize">${user.user_type.replace('_', ' ')}</div>
                 </div>
                 <span class="px-2 py-1 rounded-full text-xs ${this.getUserStatusClass(user)}">
                     ${this.getUserStatusText(user)}
@@ -527,13 +527,13 @@ class SystemAdmin {
         ];
 
         container.innerHTML = alerts.map(alert => `
-            <div class="flex items-start p-3 bg-white rounded-lg border border-brown-200">
+            <div class="flex items-start p-3 bg-white rounded-lg border border-gray-200">
                 <div class="flex-shrink-0 mt-1">
                     <i class="fas fa-${this.getAlertIcon(alert.type)} text-${this.getAlertColor(alert.type)}"></i>
                 </div>
                 <div class="ml-3 flex-1">
-                    <div class="text-sm text-brown-800">${alert.message}</div>
-                    <div class="text-xs text-brown-500 mt-1">${this.formatDateTime(alert.timestamp)}</div>
+                    <div class="text-sm text-gray-900">${alert.message}</div>
+                    <div class="text-xs text-gray-500 mt-1">${this.formatDateTime(alert.timestamp)}</div>
                 </div>
             </div>
         `).join('');
@@ -589,7 +589,7 @@ class SystemAdmin {
         if (!this.users || this.users.length === 0) {
             container.innerHTML = `
                 <tr>
-                    <td colspan="8" class="py-8 text-center text-brown-500">
+                    <td colspan="8" class="py-8 text-center text-gray-500">
                         No users found matching your criteria
                     </td>
                 </tr>
@@ -598,7 +598,7 @@ class SystemAdmin {
         }
 
         container.innerHTML = this.users.map(user => `
-            <tr class="border-b border-brown-200 hover:bg-brown-50">
+            <tr class="border-b border-gray-200 hover:bg-brown-50">
                 <td class="py-3 px-4">${user.id}</td>
                 <td class="py-3 px-4">
                     <div class="font-medium">${user.name}</div>
@@ -694,7 +694,7 @@ class SystemAdmin {
         if (!this.restaurants || this.restaurants.length === 0) {
             container.innerHTML = `
                 <tr>
-                    <td colspan="8" class="py-8 text-center text-brown-500">
+                    <td colspan="8" class="py-8 text-center text-gray-500">
                         No restaurants found matching your criteria
                     </td>
                 </tr>
@@ -703,13 +703,13 @@ class SystemAdmin {
         }
 
         container.innerHTML = this.restaurants.map(restaurant => `
-            <tr class="border-b border-brown-200 hover:bg-brown-50">
+            <tr class="border-b border-gray-200 hover:bg-brown-50">
                 <td class="py-3 px-4">${restaurant.id}</td>
                 <td class="py-3 px-4">
                     <div class="w-16 h-16 rounded-lg overflow-hidden bg-brown-200 flex items-center justify-center">
                         ${restaurant.image_url 
                             ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="w-full h-full object-cover">`
-                            : `<i class="fas fa-utensils text-brown-400"></i>`
+                            : `<i class="fas fa-utensils text-gray-400"></i>`
                         }
                     </div>
                 </td>
@@ -882,7 +882,7 @@ class SystemAdmin {
         if (!this.reservations || this.reservations.length === 0) {
             container.innerHTML = `
                 <tr>
-                    <td colspan="7" class="py-8 text-center text-brown-500">
+                    <td colspan="7" class="py-8 text-center text-gray-500">
                         No reservations found matching your criteria
                     </td>
                 </tr>
@@ -894,16 +894,16 @@ class SystemAdmin {
         try { this.removeReservationMediaControls(); } catch (e) {}
 
         container.innerHTML = this.reservations.map(reservation => `
-            <tr class="border-b border-brown-200 hover:bg-brown-50">
+            <tr class="border-b border-gray-200 hover:bg-brown-50">
                 <td class="py-3 px-4">${reservation.id}</td>
                 <td class="py-3 px-4">
                     <div class="font-medium">${reservation.customer_name}</div>
-                    <div class="text-sm text-brown-500">${reservation.customer_email}</div>
+                    <div class="text-sm text-gray-500">${reservation.customer_email}</div>
                 </td>
                 <td class="py-3 px-4">${reservation.restaurant_name}</td>
                 <td class="py-3 px-4">
                     <div>${this.formatDate(reservation.reservation_date)}</div>
-                    <div class="text-sm text-brown-500">${this.formatTime(reservation.reservation_time)}</div>
+                    <div class="text-sm text-gray-500">${this.formatTime(reservation.reservation_time)}</div>
                 </td>
                 <td class="py-3 px-4">${reservation.party_size} people</td>
                 <td class="py-3 px-4">
@@ -998,7 +998,7 @@ class SystemAdmin {
         if (!this.auditLogs || this.auditLogs.length === 0) {
             container.innerHTML = `
                 <tr>
-                    <td colspan="6" class="py-8 text-center text-brown-500">
+                    <td colspan="6" class="py-8 text-center text-gray-500">
                         No audit logs found matching your criteria
                     </td>
                 </tr>
@@ -1007,21 +1007,21 @@ class SystemAdmin {
         }
 
         container.innerHTML = this.auditLogs.map(log => `
-            <tr class="border-b border-brown-200 hover:bg-brown-50">
+            <tr class="border-b border-gray-200 hover:bg-brown-50">
                 <td class="py-3 px-4">${this.formatDateTime(log.created_at)}</td>
                 <td class="py-3 px-4">
                     <div class="font-medium">${log.user_name || 'System'}</div>
-                    <div class="text-sm text-brown-500">${log.user_email || 'N/A'}</div>
+                    <div class="text-sm text-gray-500">${log.user_email || 'N/A'}</div>
                 </td>
                 <td class="py-3 px-4">
-                    <span class="px-2 py-1 rounded-full text-xs bg-brown-100 text-brown-800 capitalize">
+                    <span class="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-900 capitalize">
                         ${log.action.replace(/_/g, ' ')}
                     </span>
                 </td>
                 <td class="py-3 px-4">
                     ${log.resource_type ? `
                         <div class="text-sm">${log.resource_type}</div>
-                        <div class="text-xs text-brown-500">ID: ${log.resource_id}</div>
+                        <div class="text-xs text-gray-500">ID: ${log.resource_id}</div>
                     ` : 'N/A'}
                 </td>
                 <td class="py-3 px-4">${log.ip_address || 'N/A'}</td>
@@ -1401,7 +1401,7 @@ class SystemAdmin {
                 const lines = menu.split(/\r?\n/).filter(Boolean);
                 menuHtml = '<ul class="list-disc pl-5">' + lines.map(l => `<li>${l}</li>`).join('') + '</ul>';
             } else {
-                menuHtml = '<p class="text-brown-500">No menu provided</p>';
+                menuHtml = '<p class="text-gray-500">No menu provided</p>';
             }
         }
 
@@ -1438,7 +1438,7 @@ class SystemAdmin {
                 <div><strong>Tables:</strong> ${restaurant.tables_count || 'N/A'}</div>
                 <div><strong>Cuisine:</strong> ${restaurant.cuisine_type || 'N/A'}</div>
                 <div><strong>Price Range:</strong> ${restaurant.price_range || 'N/A'}</div>
-                <div><strong>Description:</strong> <div class="mt-1 text-sm text-brown-700">${restaurant.description || 'N/A'}</div></div>
+                <div><strong>Description:</strong> <div class="mt-1 text-sm text-gray-700">${restaurant.description || 'N/A'}</div></div>
                 <div><strong>Menu:</strong> <div class="mt-1">${menuHtml}</div></div>
             </div>
         `;
@@ -1562,7 +1562,16 @@ class SystemAdmin {
         formData.append('tables_count', document.getElementById('restaurant-tables').value);
         
         // Check if creating new admin or using existing
-        const adminOption = document.querySelector('input[name="admin-option"]:checked').value;
+        const adminOptionElement = document.querySelector('input[name="admin-option"]:checked');
+        
+        if (!adminOptionElement) {
+            const msg = 'Please select an admin option (Create New or Use Existing)';
+            if (feedback) feedback.textContent = msg;
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = saveBtn.dataset.origHtml || 'Save Restaurant'; }
+            return;
+        }
+        
+        const adminOption = adminOptionElement.value;
         
         if (adminOption === 'create') {
             const adminName = document.getElementById('new-admin-name').value;

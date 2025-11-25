@@ -1,4 +1,547 @@
-/* Global responsive enhancements for admin page */
+/* ========================================
+   Enhanced Mobile-First Design for Rwanda Eats Reserve
+   Beautiful color palette optimized for mobile screens
+   ======================================== */
+
+:root {
+    /* Primary Colors - Warm & Inviting */
+    --primary-dark: #1F2937;
+    --primary-brown: #B45309;
+    --primary-light: #D97706;
+    --accent-orange: #D97706;
+    --accent-amber: #FDE68A;
+    
+    /* Secondary Colors - Fresh & Modern */
+    --secondary-green: #4caf50;
+    --secondary-teal: #009688;
+    --secondary-blue: #2196f3;
+    
+    /* Neutral Colors */
+    --cream-white: #fdfbf6;
+    --cream-light: #FDE68A;
+    --gray-light: #e0e0e0;
+    --gray-medium: #757575;
+    --gray-dark: #1F2937;
+    
+    /* Status Colors */
+    --success: #43a047;
+    --warning: #fb8c00;
+    --error: #e53935;
+    --info: #1e88e5;
+    
+    /* Text Colors */
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --text-light: #999999;
+    --text-white: #ffffff;
+    
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Base Styles - Mobile First */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--cream-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography - Optimized for Mobile */
+h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-bottom: var(--space-md);
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: var(--space-md);
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-brown);
+    margin-bottom: var(--space-sm);
+}
+
+p {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+/* Mobile-Optimized Header */
+.mobile-header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-brown) 100%);
+    color: var(--text-white);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+}
+
+.mobile-header h1 {
+    font-size: 1.25rem;
+    color: var(--text-white);
+    margin: 0;
+}
+
+/* Hero Section with Background Image */
+.hero-section {
+    position: relative;
+    overflow: hidden;
+    min-height: 500px;
+}
+
+.hero-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.hero-background img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: subtleZoom 20s ease-in-out infinite alternate;
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(44, 24, 16, 0.9) 0%, rgba(93, 64, 55, 0.85) 50%, rgba(44, 24, 16, 0.9) 100%);
+}
+
+@keyframes subtleZoom {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.05);
+    }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-title {
+    text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero-subtitle {
+    text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.2);
+    animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.hero-search {
+    animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+/* Enhanced Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: var(--radius-lg);
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    min-height: 44px; /* Touch-friendly */
+    gap: var(--space-sm);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-amber) 100%);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(255, 111, 0, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 8px rgba(255, 111, 0, 0.2);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--primary-brown) 0%, var(--primary-light) 100%);
+    color: var(--text-white);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success) 0%, var(--secondary-green) 100%);
+    color: var(--text-white);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary-brown);
+    color: var(--primary-brown);
+}
+
+/* Enhanced Card Design */
+.card {
+    background: var(--text-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--cream-light) 0%, var(--cream-white) 100%);
+    padding: var(--space-lg);
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.card-body {
+    padding: var(--space-lg);
+}
+
+.card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--gray-light);
+}
+
+/* Restaurant Card - Enhanced */
+.restaurant-card {
+    background: var(--text-white);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(141, 110, 99, 0.1);
+}
+
+.restaurant-card:active {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+}
+
+.restaurant-badge {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    background: rgba(255, 111, 0, 0.95);
+    color: var(--text-white);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+/* Status Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    gap: var(--space-xs);
+}
+
+.badge-success {
+    background-color: rgba(67, 160, 71, 0.1);
+    color: var(--success);
+    border: 1px solid rgba(67, 160, 71, 0.3);
+}
+
+.badge-warning {
+    background-color: rgba(251, 140, 0, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(251, 140, 0, 0.3);
+}
+
+.badge-error {
+    background-color: rgba(229, 57, 53, 0.1);
+    color: var(--error);
+    border: 1px solid rgba(229, 57, 53, 0.3);
+}
+
+.badge-info {
+    background-color: rgba(30, 136, 229, 0.1);
+    color: var(--info);
+    border: 1px solid rgba(30, 136, 229, 0.3);
+}
+
+/* Enhanced Forms */
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2563EB;
+    margin-bottom: var(--space-sm);
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem; /* Prevents zoom on iOS */
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    background-color: var(--cream-white);
+    color: var(--text-primary);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-orange);
+    background-color: var(--text-white);
+    box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.1);
+}
+
+/* Bottom Navigation - Mobile Optimized */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--text-white);
+    border-top: 1px solid var(--gray-light);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    z-index: 50;
+}
+
+.bottom-nav-items {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-width: 64px;
+}
+
+.bottom-nav-item.active {
+    color: var(--accent-orange);
+}
+
+.bottom-nav-item i {
+    font-size: 1.5rem;
+}
+
+.bottom-nav-item span {
+    font-size: 0.6875rem;
+    font-weight: 500;
+}
+
+/* Stats Cards - Enhanced */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--cream-white) 0%, var(--cream-light) 100%);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    border: 2px solid rgba(141, 110, 99, 0.1);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-amber) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: var(--space-xs);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Loading States */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--gray-light);
+    border-top-color: var(--accent-orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: var(--space-md);
+    right: var(--space-md);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    animation: slideUp 0.3s ease;
+    z-index: 60;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, var(--success) 0%, var(--secondary-green) 100%);
+    color: var(--text-white);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, var(--error) 0%, #d32f2f 100%);
+    color: var(--text-white);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal - Mobile Optimized */
+.modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--text-white);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+/* Spacing Utilities */
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.p-xl { padding: var(--space-xl); }
+
+/* ========================================
+   Admin Page Specific Styles
+   ======================================== */
 
 .admin-page main { 
   /* Ensure content doesn't hide behind bottom nav on small screens */
@@ -502,6 +1045,50 @@
   transition: opacity 0.18s ease, max-height 0.18s ease;
 }
 
+/* ========================================
+   Responsive Breakpoints
+   ======================================== */
+
+/* Tablet Breakpoint (768px+) */
+@media (min-width: 768px) {
+    body { font-size: 16px; }
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.875rem; }
+    h3 { font-size: 1.5rem; }
+    
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .modal {
+        align-items: center;
+    }
+    
+    .modal-content {
+        border-radius: var(--radius-xl);
+        max-width: 600px;
+        animation: scaleIn 0.3s ease;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+}
+
+/* Desktop Breakpoint (1024px+) */
+@media (min-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
 /* Responsive tweaks */
 @media (max-width: 900px) {
   #restaurant-modal #preview-images-container { grid-template-columns: repeat(3, 1fr); }
@@ -513,3 +1100,51 @@
   #restaurant-modal #operating-hours .flex.items-center { grid-template-columns: 90px 1fr; }
 }
 
+/* ========================================
+   Dark Mode Support
+   ======================================== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --cream-white: #1a1a1a;
+        --cream-light: #2d2d2d;
+        --text-primary: #ffffff;
+        --text-secondary: #b3b3b3;
+        --gray-light: #404040;
+        --text-white: #ffffff;
+    }
+    
+    .card,
+    .restaurant-card,
+    .stat-card {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .modal-content,
+    .bottom-nav {
+        background: #2d2d2d;
+    }
+}
+
+/* ========================================
+   Print Styles
+   ======================================== */
+@media print {
+    .bottom-nav,
+    .mobile-header,
+    .btn,
+    #mobile-admin-nav { 
+        display: none; 
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .card,
+    .restaurant-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}

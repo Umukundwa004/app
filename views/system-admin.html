@@ -66,7 +66,7 @@
                     <h1 class="text-2xl font-bold">Rwanda Eats Reserve - System Admin</h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span id="admin-name" class="text-brown-200"></span>
+                    <span id="admin-name" class="text-gray-200"></span>
                     <button id="logout-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         Logout
                     </button>
@@ -79,24 +79,24 @@
     <main class="container mx-auto px-4 py-8">
         <!-- Tabs -->
         <div class="bg-white rounded-lg shadow-md mb-6">
-            <div class="border-b border-brown-200">
+            <div class="border-b border-gray-200">
                 <nav class="flex -mb-px overflow-x-auto">
-                    <button id="dashboard-tab" class="tab-button py-4 px-6 text-center border-b-2 border-brown-600 font-medium text-brown-600 whitespace-nowrap">
+                    <button id="dashboard-tab" class="tab-button py-4 px-6 text-center border-b-2 border-brown-600 font-medium text-gray-600 whitespace-nowrap">
                         <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                     </button>
-                    <button id="users-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                    <button id="users-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap">
                         <i class="fas fa-users mr-2"></i>User Management
                     </button>
-                    <button id="restaurants-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                    <button id="restaurants-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap">
                         <i class="fas fa-store mr-2"></i>Restaurant Management
                     </button>
-                    <button id="reservations-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                    <button id="reservations-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap">
                         <i class="fas fa-calendar-alt mr-2"></i>All Reservations
                     </button>
-                    <button id="system-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                    <button id="system-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap">
                         <i class="fas fa-cog mr-2"></i>System Settings
                     </button>
-                    <button id="audit-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-brown-500 hover:text-brown-600 whitespace-nowrap">
+                    <button id="audit-tab" class="tab-button py-4 px-6 text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap">
                         <i class="fas fa-shield-alt mr-2"></i>Audit Logs
                     </button>
                 </nav>
@@ -106,7 +106,7 @@
         <!-- Dashboard Tab Content -->
         <div id="dashboard-content" class="tab-content">
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-2xl font-bold mb-6 text-brown-800">System Overview</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-900">System Overview</h2>
                 
                 <!-- Stats -->
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
@@ -138,30 +138,30 @@
                 
                 <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">User Distribution</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">User Distribution</h3>
                         <div id="user-chart" class="h-64 flex items-center justify-center">
-                            <p class="text-brown-500">Chart will appear here</p>
+                            <p class="text-gray-500">Chart will appear here</p>
                         </div>
                     </div>
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Reservation Trends</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Reservation Trends</h3>
                         <div id="reservation-chart" class="h-64 flex items-center justify-center">
-                            <p class="text-brown-500">Chart will appear here</p>
+                            <p class="text-gray-500">Chart will appear here</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Recent Activity -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Recent Users</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Users</h3>
                         <div id="recent-users" class="space-y-3">
                             <!-- Recent users will be loaded here -->
                         </div>
                     </div>
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Recent Reservations</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Reservations</h3>
                         <div id="system-alerts" class="space-y-3">
                             <!-- System alerts will be loaded here -->
                         </div>
@@ -174,7 +174,7 @@
         <div id="users-content" class="tab-content hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-brown-800">User Management</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
                     <button id="add-user-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         <i class="fas fa-plus mr-2"></i>Add User
                     </button>
@@ -183,20 +183,20 @@
                 <!-- User Filters -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">User Type</label>
-                        <select id="user-type-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">User Type</label>
+                        <select id="user-type-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Users</option>
 
         <!-- Restaurant Details Modal (read-only) -->
         <div id="restaurant-details-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
             <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 id="restaurant-details-title" class="text-2xl font-bold text-brown-800">Restaurant Details</h2>
+                    <h2 id="restaurant-details-title" class="text-2xl font-bold text-gray-900">Restaurant Details</h2>
                     <button id="close-restaurant-details" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div id="restaurant-details-body" class="space-y-3 text-brown-800">
+                <div id="restaurant-details-body" class="space-y-3 text-gray-900">
                     <!-- Populated by JS -->
                 </div>
                 <div class="mt-6 text-right">
@@ -210,8 +210,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
-                        <select id="user-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Status</label>
+                        <select id="user-status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -229,15 +229,15 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                            <tr class="bg-brown-100">
-                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Name</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Email</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Phone</th>
-                                <th class="py-3 px-4 text-left text-brown-800">User Type</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Joined</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            <tr class="bg-gray-100">
+                                <th class="py-3 px-4 text-left text-gray-900">ID</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Name</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Email</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Phone</th>
+                                <th class="py-3 px-4 text-left text-gray-900">User Type</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Status</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Joined</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="users-table">
@@ -252,7 +252,7 @@
         <div id="restaurants-content" class="tab-content hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-brown-800">Restaurant Management</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">Restaurant Management</h2>
                     <button id="add-restaurant-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         <i class="fas fa-plus mr-2"></i>Add Restaurant
                     </button>
@@ -261,16 +261,16 @@
                 <!-- Restaurant Filters -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
-                        <select id="restaurant-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Status</label>
+                        <select id="restaurant-status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Restaurants</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Cuisine</label>
-                        <select id="restaurant-cuisine-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Cuisine</label>
+                        <select id="restaurant-cuisine-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Cuisines</option>
                             <!-- Cuisine options will be populated dynamically -->
                         </select>
@@ -286,15 +286,15 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                            <tr class="bg-brown-100">
-                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Image</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Name</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Location</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Cuisine</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Admin</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            <tr class="bg-gray-100">
+                                <th class="py-3 px-4 text-left text-gray-900">ID</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Image</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Name</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Location</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Cuisine</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Admin</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Status</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="restaurants-table">
@@ -308,13 +308,13 @@
         <!-- Reservations Tab Content -->
         <div id="reservations-content" class="tab-content hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-2xl font-bold mb-6 text-brown-800">All Reservations</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-900">All Reservations</h2>
                 
                 <!-- Reservation Filters -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Status</label>
-                        <select id="reservation-status-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Status</label>
+                        <select id="reservation-status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
@@ -323,15 +323,15 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Restaurant</label>
-                        <select id="reservation-restaurant-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Restaurant</label>
+                        <select id="reservation-restaurant-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             <option value="all">All Restaurants</option>
                             <!-- Restaurants will be populated dynamically -->
                         </select>
                     </div>
                     <div>
-                        <label class="block text-brown-700 mb-2 font-medium">Date Range</label>
-                        <input type="date" id="reservation-date-filter" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                        <label class="block text-gray-700 mb-2 font-medium">Date Range</label>
+                        <input type="date" id="reservation-date-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                     </div>
                     <div class="flex items-end">
                         <button id="search-reservations-btn" class="w-full bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
@@ -345,14 +345,14 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                            <tr class="bg-brown-100">
-                                <th class="py-3 px-4 text-left text-brown-800">ID</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Customer</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Restaurant</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Date & Time</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Party Size</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Status</th>
-                                <th class="py-3 px-4 text-left text-brown-800">Actions</th>
+                            <tr class="bg-gray-100">
+                                <th class="py-3 px-4 text-left text-gray-900">ID</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Customer</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Restaurant</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Date & Time</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Party Size</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Status</th>
+                                <th class="py-3 px-4 text-left text-gray-900">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="all-reservations-table">
@@ -366,51 +366,51 @@
         <!-- System Settings Tab Content -->
         <div id="system-content" class="tab-content hidden">
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-2xl font-bold mb-6 text-brown-800">System Settings</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-900">System Settings</h2>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- General Settings -->
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">General Settings</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-brown-700 mb-2 font-medium">System Name</label>
-                                <input type="text" value="Rwanda Eats Reserve" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                                <label class="block text-gray-700 mb-2 font-medium">System Name</label>
+                                <input type="text" value="Rwanda Eats Reserve" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             </div>
                             <div>
-                                <label class="block text-brown-700 mb-2 font-medium">Default Reservation Timeout (minutes)</label>
-                                <input type="number" value="30" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                                <label class="block text-gray-700 mb-2 font-medium">Default Reservation Timeout (minutes)</label>
+                                <input type="number" value="30" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             </div>
                             <div>
-                                <label class="block text-brown-700 mb-2 font-medium">Max Party Size</label>
-                                <input type="number" value="20" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
+                                <label class="block text-gray-700 mb-2 font-medium">Max Party Size</label>
+                                <input type="number" value="20" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500">
                             </div>
                         </div>
                     </div>
                     
                     <!-- Notification Settings -->
-                    <div class="bg-brown-50 p-6 rounded-lg border border-brown-200">
-                        <h3 class="text-lg font-semibold text-brown-800 mb-4">Notification Settings</h3>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Notification Settings</h3>
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
-                                <span class="text-brown-700">Email Notifications</span>
+                                <span class="text-gray-700">Email Notifications</span>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
                                 </label>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-brown-700">SMS Notifications</span>
+                                <span class="text-gray-700">SMS Notifications</span>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
                                 </label>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-brown-700">Reservation Reminders</span>
+                                <span class="text-gray-700">Reservation Reminders</span>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-brown-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brown-600"></div>
                                 </label>
                             </div>
                         </div>
@@ -425,9 +425,9 @@
         <div id="audit-content" class="tab-content hidden p-6">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-brown-800">Audit Logs</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">Audit Logs</h2>
                     <div class="flex space-x-3">
-                        <select id="audit-action-filter" class="px-3 py-2 border border-brown-300 rounded-lg focus:outline-none">
+                        <select id="audit-action-filter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
                             <option value="all">All Actions</option>
                             <option value="USER_CREATED">User Created</option>
                             <option value="USER_UPDATED">User Updated</option>
@@ -435,10 +435,10 @@
                             <option value="RESTAURANT_DELETED">Restaurant Deleted</option>
                             <option value="RESERVATION_CREATED">Reservation Created</option>
                         </select>
-                        <select id="audit-user-filter" class="px-3 py-2 border border-brown-300 rounded-lg focus:outline-none">
+                        <select id="audit-user-filter" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none">
                             <option value="all">All Users</option>
                         </select>
-                        <input id="audit-date-filter" type="date" class="px-3 py-2 border border-brown-300 rounded-lg" />
+                        <input id="audit-date-filter" type="date" class="px-3 py-2 border border-gray-300 rounded-lg" />
                         <button id="search-audit-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Search</button>
                     </div>
                 </div>
@@ -469,7 +469,7 @@
     <div id="restaurant-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl mx-4 max-h-[80vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h2 id="restaurant-modal-title" class="text-2xl font-bold text-brown-800">Add / Edit Restaurant</h2>
+                <h2 id="restaurant-modal-title" class="text-2xl font-bold text-gray-900">Add / Edit Restaurant</h2>
                 <button id="close-restaurant-modal" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
@@ -505,7 +505,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Menu</label>
-                        <div class="mt-1 text-sm text-brown-700">
+                        <div class="mt-1 text-sm text-gray-700">
                             <label class="inline-flex items-center mr-4">
                                 <input type="radio" name="menu-source" value="editor" checked class="form-radio">
                                 <span class="ml-2">Edit menu</span>
@@ -520,7 +520,7 @@
                         </div>
                         <div id="menu-file" class="mt-2 hidden">
                             <input type="file" id="restaurant-menu-file" accept="application/pdf" class="block w-full">
-                            <p class="text-xs text-brown-500 mt-1">Upload a PDF menu (optional).</p>
+                            <p class="text-xs text-gray-500 mt-1">Upload a PDF menu (optional).</p>
                         </div>
                     </div>
 
@@ -545,7 +545,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Operating Hours</label>
-                        <div id="operating-hours" class="mt-2 grid gap-2 text-sm text-brown-700">
+                        <div id="operating-hours" class="mt-2 grid gap-2 text-sm text-gray-700">
                             <!-- Days -->
                             <div class="flex items-center space-x-2">
                                 <div class="w-20">Monday</div>
@@ -605,9 +605,9 @@
                             <div>
                                 <label for="restaurant-images" class="block text-sm font-medium text-gray-700">Images (multiple)</label>
                                 <input type="file" id="restaurant-images" accept="image/*" multiple class="mt-1 block w-full">
-                                <p class="text-xs text-brown-500 mt-1">Upload photos. First image will be primary.</p>
+                                <p class="text-xs text-gray-500 mt-1">Upload photos. First image will be primary.</p>
                                 <div id="existing-images-gallery" class="mt-2 hidden">
-                                    <h4 class="text-sm font-semibold text-brown-700 mb-2">Current Images</h4>
+                                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Current Images</h4>
                                     <div id="existing-images-container" class="grid grid-cols-3 md:grid-cols-4 gap-2"></div>
                                 </div>
                                 <!-- Backwards-compatible preview containers used by JS helper functions -->
@@ -638,11 +638,11 @@
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <div class="flex items-center space-x-4 mb-4">
                                 <label class="inline-flex items-center">
-                                    <input type="radio" name="admin-option" value="existing" checked class="form-radio text-brown-600">
+                                    <input type="radio" name="admin-option" value="existing" checked class="form-radio text-gray-600">
                                     <span class="ml-2 text-sm">Use existing admin</span>
                                 </label>
                                 <label class="inline-flex items-center">
-                                    <input type="radio" name="admin-option" value="create" class="form-radio text-brown-600">
+                                    <input type="radio" name="admin-option" value="create" class="form-radio text-gray-600">
                                     <span class="ml-2 text-sm">Create new admin</span>
                                 </label>
                             </div>
@@ -662,7 +662,7 @@
                     </div>
 
                     <div class="flex justify-end mt-2 space-x-3">
-                        <button type="button" id="cancel-restaurant" class="px-4 py-2 text-brown-600 hover:text-brown-800 border border-brown-300 rounded-lg">Cancel</button>
+                        <button type="button" id="cancel-restaurant" class="px-4 py-2 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg">Cancel</button>
                         <button type="submit" id="save-restaurant-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Save Restaurant</button>
                     </div>
 
@@ -684,7 +684,7 @@
     <div id="user-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
-                <h2 id="user-modal-title" class="text-2xl font-bold text-brown-800">Add User</h2>
+                <h2 id="user-modal-title" class="text-2xl font-bold text-gray-900">Add User</h2>
                 <button id="close-user-modal" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
