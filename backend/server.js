@@ -23,7 +23,7 @@ const BCRYPT_ROUNDS = 12;
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = 'public/uploads/restaurants';
+        const uploadDir = path.join(__dirname, '..', 'frontend', 'public', 'uploads', 'restaurants');
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -112,18 +112,18 @@ class EmailVerificationService {
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
-app.use('/views', express.static('views')); // Serve views folder for images
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
+app.use('/views', express.static(path.join(__dirname, '..', 'frontend', 'views'))); // Serve views folder for images
 
 // Serve PWA files
 app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'manifest.json'));
 });
 
 app.get('/service-worker.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, 'public', 'service-worker.js'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'service-worker.js'));
 });
 
 app.use(session({
@@ -651,33 +651,33 @@ class AuditLogService {
 
 // Serve pages
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'customer.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'customer.html'));
 });
 
 app.get('/admin', requireAuth, (req, res) => {
     if (req.session.user.user_type === 'system_admin') {
-        res.sendFile(path.join(__dirname, 'views', 'system-admin.html'));
+        res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'system-admin.html'));
     } else if (req.session.user.user_type === 'restaurant_admin') {
-        res.sendFile(path.join(__dirname, 'views', 'restaurant-admin.html'));
+        res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'restaurant-admin.html'));
     } else {
         res.redirect('/');
     }
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'login.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'login.html'));
 });
 
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'register.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'register.html'));
 });
 
 app.get('/verify-email', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'verify-email.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'verify-email.html'));
 });
 
 app.get('/profile', requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'customer-profile.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'customer-profile.html'));
 });
 
 // Identification & Authentication Services
@@ -1747,6 +1747,55 @@ app.put('/api/reservations/:id/status', requireAuth, async (req, res) => {
     }
 });
 
+// Delete reservation (system admin only)
+app.delete('/api/reservations/:id', requireAuth, async (req, res) => {
+    try {
+        // Check if user is system admin
+        if (req.session.user.user_type !== 'system_admin') {
+            return res.status(403).json({ error: 'Only system administrators can delete reservations' });
+        }
+
+        // Get reservation details before deletion for logging
+        const [reservations] = await db.execute(
+            `SELECT r.*, u.name as customer_name, rest.name as restaurant_name
+             FROM reservations r
+             JOIN users u ON r.customer_id = u.id
+             JOIN restaurants rest ON r.restaurant_id = rest.id
+             WHERE r.id = ?`,
+            [req.params.id]
+        );
+        
+        if (reservations.length === 0) {
+            return res.status(404).json({ error: 'Reservation not found' });
+        }
+        
+        const reservation = reservations[0];
+        
+        // Delete the reservation
+        await db.execute('DELETE FROM reservations WHERE id = ?', [req.params.id]);
+        
+        // Log the action
+        await AuditLogService.logAction(
+            req.session.user.id, 
+            'RESERVATION_DELETED', 
+            'reservation', 
+            req.params.id, 
+            { 
+                customer: reservation.customer_name,
+                restaurant: reservation.restaurant_name,
+                date: reservation.reservation_date,
+                time: reservation.reservation_time
+            }, 
+            req
+        );
+        
+        res.json({ message: 'Reservation deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting reservation:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get user notifications
 app.get('/api/notifications', requireAuth, async (req, res) => {
     try {
@@ -2483,7 +2532,7 @@ END RESTAURANT DETAILS MANAGEMENT API
 })();
 // Add this route to serve the registration page
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'register.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'register.html'));
 });
 
 // User Registration (FR 3.1)
@@ -2546,28 +2595,28 @@ app.post('/api/auth/register', async (req, res) => {
 
 // Serve static pages
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'customer.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'customer.html'));
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'login.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'login.html'));
 });
 
 // NEW: Registration page route
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'register.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'register.html'));
 });
 
 // NEW: Email verification page route
 app.get('/verify-email', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'verify-email.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'verify-email.html'));
 });
 
 app.get('/admin', requireAuth, (req, res) => {
     if (req.session.user.user_type === 'system_admin') {
-        res.sendFile(path.join(__dirname, 'views', 'system-admin.html'));
+        res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'system-admin.html'));
     } else if (req.session.user.user_type === 'restaurant_admin') {
-        res.sendFile(path.join(__dirname, 'views', 'restaurant-admin.html'));
+        res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'restaurant-admin.html'));
     } else {
         res.redirect('/');
     }
@@ -2748,7 +2797,7 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
 
 app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }, { name: 'menu_pdf', maxCount: 1 }]), async (req, res) => {
     try {
-        const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count } = req.body;
+        const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, operating_hours, menu } = req.body;
         
         // Verify ownership
         const [ownership] = await db.execute(
@@ -2765,6 +2814,24 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
              tables_count = ?`;
         let updateParams = [name, description, location, contact_phone, contact_email, opening_time, closing_time, 
              cuisine_type, price_range, tables_count];
+        
+        // Handle menu text
+        if (menu !== undefined) {
+            updateQuery += ', menu = ?';
+            updateParams.push(menu || null);
+        }
+        
+        // Handle operating hours
+        if (operating_hours !== undefined && operating_hours !== '') {
+            updateQuery += ', operating_hours = ?';
+            try {
+                const hoursValue = operating_hours ? (typeof operating_hours === 'string' ? operating_hours : JSON.stringify(operating_hours)) : null;
+                updateParams.push(hoursValue);
+            } catch (e) {
+                console.error('Error processing operating_hours:', e);
+                updateParams.push(null);
+            }
+        }
         
         // Handle video upload
         if (req.files && req.files.video && req.files.video[0]) {
@@ -3472,6 +3539,28 @@ app.get('/api/system-admin/restaurants', requireSystemAdmin, async (req, res) =>
     }
 });
 
+// System Admin - Get Single Restaurant
+app.get('/api/system-admin/restaurants/:id', requireSystemAdmin, async (req, res) => {
+    try {
+        const [restaurants] = await db.execute(
+            `SELECT r.*, u.name as admin_name, u.email as admin_email 
+             FROM restaurants r 
+             LEFT JOIN users u ON r.restaurant_admin_id = u.id 
+             WHERE r.id = ?`,
+            [req.params.id]
+        );
+        
+        if (restaurants.length === 0) {
+            return res.status(404).json({ error: 'Restaurant not found' });
+        }
+        
+        res.json(restaurants[0]);
+    } catch (error) {
+        console.error('Error loading restaurant:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
+
 app.put('/api/system-admin/restaurants/:id/status', requireSystemAdmin, async (req, res) => {
     try {
         const { active } = req.body;
@@ -3602,58 +3691,137 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
 });
 
 // System Admin - Update Restaurant
-app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }, { name: 'menu_pdf', maxCount: 1 }]), async (req, res) => {
+app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }, { name: 'menu_pdf', maxCount: 1 }]), async (req, res) => {
+    const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
+        
+        console.log('Update restaurant request body:', req.body);
+        console.log('Update restaurant files:', req.files);
+        
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, operating_hours, menu } = req.body;
         
-        let updateQuery = `UPDATE restaurants SET name = ?, description = ?, location = ?, contact_phone = ?, 
-             contact_email = ?, opening_time = ?, closing_time = ?, cuisine_type = ?, price_range = ?, 
-             tables_count = ?`;
-        let updateParams = [name, description, location, contact_phone, contact_email, opening_time, closing_time, 
-             cuisine_type, price_range, tables_count];
+        // Build dynamic update query based on provided fields
+        let updateFields = [];
+        let updateParams = [];
         
-        // Handle file uploads (image, video, menu_pdf)
-        if (req.files) {
-            if (req.files.image && req.files.image[0]) {
-                const image_url = '/uploads/restaurants/' + req.files.image[0].filename;
-                updateQuery += ', image_url = ?';
-                updateParams.push(image_url);
-            }
-            if (req.files.video && req.files.video[0]) {
-                const video_url = '/uploads/restaurants/' + req.files.video[0].filename;
-                updateQuery += ', video_url = ?';
-                updateParams.push(video_url);
-            }
-            if (req.files.menu_pdf && req.files.menu_pdf[0]) {
-                const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
-                updateQuery += ', menu_pdf = ?';
-                updateParams.push(menu_pdf_url);
-            }
+        if (name !== undefined && name !== '') { updateFields.push('name = ?'); updateParams.push(name); }
+        if (description !== undefined) { updateFields.push('description = ?'); updateParams.push(description || ''); }
+        if (location !== undefined && location !== '') { updateFields.push('location = ?'); updateParams.push(location); }
+        if (contact_phone !== undefined) { updateFields.push('contact_phone = ?'); updateParams.push(contact_phone || null); }
+        if (contact_email !== undefined) { updateFields.push('contact_email = ?'); updateParams.push(contact_email || null); }
+        if (opening_time !== undefined) { updateFields.push('opening_time = ?'); updateParams.push(opening_time || null); }
+        if (closing_time !== undefined) { updateFields.push('closing_time = ?'); updateParams.push(closing_time || null); }
+        if (cuisine_type !== undefined) { updateFields.push('cuisine_type = ?'); updateParams.push(cuisine_type || null); }
+        if (price_range !== undefined) { updateFields.push('price_range = ?'); updateParams.push(price_range || '2'); }
+        if (tables_count !== undefined) { updateFields.push('tables_count = ?'); updateParams.push(parseInt(tables_count) || 10); }
+        
+        // Update restaurant admin assignment
+        if (restaurant_admin_id !== undefined) {
+            updateFields.push('restaurant_admin_id = ?');
+            updateParams.push(restaurant_admin_id || null);
+        }
+        
+        // Handle video upload
+        if (req.files && req.files.video && req.files.video[0]) {
+            const video_url = '/uploads/restaurants/' + req.files.video[0].filename;
+            updateFields.push('video_url = ?');
+            updateParams.push(video_url);
+        }
+        
+        // Handle menu PDF upload
+        if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
+            const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+            updateFields.push('menu_pdf_url = ?');
+            updateParams.push(menu_pdf_url);
         }
 
         // Support updating menu text and operating hours
-        if (typeof menu !== 'undefined') {
-            updateQuery += ', menu = ?';
+        if (menu !== undefined) {
+            updateFields.push('menu = ?');
             updateParams.push(menu || null);
         }
-        if (typeof operating_hours !== 'undefined') {
-            updateQuery += ', operating_hours = ?';
+        if (operating_hours !== undefined && operating_hours !== '') {
+            updateFields.push('operating_hours = ?');
             try {
-                updateParams.push(operating_hours ? JSON.stringify(operating_hours) : null);
+                const hoursValue = operating_hours ? (typeof operating_hours === 'string' ? operating_hours : JSON.stringify(operating_hours)) : null;
+                updateParams.push(hoursValue);
             } catch (e) {
+                console.error('Error processing operating_hours:', e);
                 updateParams.push(null);
             }
         }
         
-        updateQuery += ' WHERE id = ?';
-        updateParams.push(req.params.id);
+        // Execute main restaurant update if there are fields to update
+        if (updateFields.length > 0) {
+            const updateQuery = `UPDATE restaurants SET ${updateFields.join(', ')} WHERE id = ?`;
+            updateParams.push(req.params.id);
+            
+            console.log('Update query:', updateQuery);
+            console.log('Update params:', updateParams);
+            
+            await connection.execute(updateQuery, updateParams);
+        }
         
-        await db.execute(updateQuery, updateParams);
+        // Handle multiple images upload
+        if (req.files && req.files.images && req.files.images.length > 0) {
+            try {
+                // Get the current max display_order
+                const [maxOrder] = await connection.execute(
+                    'SELECT COALESCE(MAX(display_order), -1) as max_order FROM restaurant_images WHERE restaurant_id = ?',
+                    [req.params.id]
+                );
+                
+                let nextOrder = maxOrder[0].max_order + 1;
+                
+                // Check if there are existing images
+                const [existingImages] = await connection.execute(
+                    'SELECT COUNT(*) as count FROM restaurant_images WHERE restaurant_id = ?',
+                    [req.params.id]
+                );
+                
+                const hasExistingImages = existingImages[0].count > 0;
+                
+                for (let i = 0; i < req.files.images.length; i++) {
+                    const image_url = '/uploads/restaurants/' + req.files.images[i].filename;
+                    const is_primary = !hasExistingImages && i === 0; // First image is primary only if no existing images
+                    const display_order = nextOrder + i;
+                    
+                    await connection.execute(
+                        `INSERT INTO restaurant_images (restaurant_id, image_url, is_primary, display_order) 
+                         VALUES (?, ?, ?, ?)`,
+                        [req.params.id, image_url, is_primary, display_order]
+                    );
+                }
+                
+                // Update restaurant's image_url with the first new image if no images existed before
+                if (!hasExistingImages && req.files.images.length > 0) {
+                    const primaryImageUrl = '/uploads/restaurants/' + req.files.images[0].filename;
+                    await connection.execute(
+                        `UPDATE restaurants SET image_url = ? WHERE id = ?`,
+                        [primaryImageUrl, req.params.id]
+                    );
+                }
+            } catch (imgError) {
+                if (imgError.code === 'ER_NO_SUCH_TABLE') {
+                    console.warn('`restaurant_images` table not found, skipping image processing.');
+                } else {
+                    throw imgError; // re-throw other errors
+                }
+            }
+        }
         
+        await AuditLogService.logAction(req.session.user.id, 'RESTAURANT_UPDATED', 'restaurant', req.params.id, { name }, req, connection);
+        
+        await connection.commit();
         res.json({ message: 'Restaurant updated successfully' });
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('Error updating restaurant:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

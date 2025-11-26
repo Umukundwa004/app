@@ -1,0 +1,140 @@
+Delivery-app/
+│
+├── 📁 backend/                          # Server-side code
+│   ├── server.js                        # Main Express server application
+│   │
+│   ├── 📁 config/                       # Configuration files
+│   │   └── config.js                    # Database & app configuration
+│   │
+│   ├── 📁 controllers/                  # Route controllers (empty - ready to use)
+│   │   └── (add controller files here)
+│   │
+│   ├── 📁 middleware/                   # Express middleware (empty - ready to use)
+│   │   └── (add middleware files here)
+│   │
+│   ├── 📁 models/                       # Database models (empty - ready to use)
+│   │   └── (add model files here)
+│   │
+│   ├── 📁 routes/                       # API routes (empty - ready to use)
+│   │   └── (add route files here)
+│   │
+│   ├── 📁 utils/                        # Utility functions (empty - ready to use)
+│   │   └── (add utility files here)
+│   │
+│   ├── 📁 migrations/                   # Database migrations
+│   │   ├── database.sql
+│   │   ├── init-database.sql
+│   │   ├── migration-add-cuisine.sql
+│   │   ├── migration-restaurant-details.sql
+│   │   ├── migration-restaurant-images.sql
+│   │   ├── add-document-columns.sql
+│   │   ├── fix-images-primary.sql
+│   │   ├── fix-menu-columns.sql
+│   │   ├── fix-menu-items-cuisine.sql
+│   │   └── fix-restaurant-images.sql
+│   │
+│   └── 📁 scripts/                      # Maintenance & setup scripts
+│       ├── setup-database.js
+│       ├── setup-db-interactive.js
+│       ├── check-admin-users.js
+│       ├── check-restaurant-columns.js
+│       ├── migration-multiple-cuisines.js
+│       ├── run-migration.js
+│       ├── run-migration-details.js
+│       ├── run-document-migration.js
+│       ├── run-fix-images.js
+│       ├── test-admin-login.js
+│       ├── test-check-users.js
+│       ├── test-menu-items.js
+│       ├── reset-restaurant-admin-password.js
+│       ├── unlock-admin.js
+│       ├── verify-settings-columns.js
+│       ├── add-menu-column.js
+│       ├── create-details-tables.js
+│       └── update-passwords.js
+│
+├── 📁 frontend/                         # Client-side code
+│   │
+│   ├── 📁 public/                       # Static assets (served directly)
+│   │   ├── manifest.json                # PWA manifest
+│   │   ├── service-worker.js            # PWA service worker
+│   │   ├── style.css                    # Global styles
+│   │   ├── unregister-sw.js             # Service worker unregister
+│   │   │
+│   │   ├── 📁 css/                      # Compiled CSS
+│   │   │   └── output.css               # Tailwind compiled output
+│   │   │
+│   │   ├── 📁 js/                       # JavaScript files
+│   │   │   ├── customer.js              # Customer interface logic
+│   │   │   ├── restaurant-admin.js      # Restaurant admin logic
+│   │   │   ├── system-admin.js          # System admin logic
+│   │   │   ├── pwa.js                   # PWA functionality
+│   │   │   └── splash.js                # Splash screen logic
+│   │   │
+│   │   └── 📁 uploads/                  # User uploaded files
+│   │       └── 📁 restaurants/          # Restaurant images
+│   │
+│   ├── 📁 src/                          # Source files (pre-compiled)
+│   │   └── input.css                    # Tailwind input file
+│   │
+│   └── 📁 views/                        # HTML templates
+│       ├── customer.html                # Customer main page
+│       ├── customer-profile.html        # Customer profile page
+│       ├── customer-tailwind.html       # Customer Tailwind page
+│       ├── login.html                   # Login page
+│       ├── register.html                # Registration page
+│       ├── verify-email.html            # Email verification page
+│       ├── admin-router.html            # Admin routing page
+│       ├── system-admin.html            # System admin dashboard
+│       ├── restaurant-admin.html        # Restaurant admin dashboard
+│       ├── home.html                    # Home page
+│       └── 📁 images/                   # Static view images
+│
+├── 📄 package.json                      # NPM dependencies & scripts
+├── 📄 package-lock.json                 # NPM dependency lock
+├── 📄 tailwind.config.js                # Tailwind CSS configuration
+├── 📄 TAILWIND.md                       # Tailwind documentation
+├── 📄 README.md                         # Project README
+├── 📄 PROJECT_STRUCTURE.md              # Structure documentation
+├── 📄 MIGRATION_GUIDE.md                # Migration guide
+├── 📄 .env                              # Environment variables
+├── 📄 .env.example                      # Environment example
+├── 📄 .gitignore                        # Git ignore rules
+├── 📄 start.bat                         # Windows start script
+├── 📄 cookies.txt                       # Cookie data
+├── 📄 server.log                        # Server logs
+├── 📄 server.err                        # Server errors
+├── 📄 server-debug.log                  # Debug logs
+│
+├── 🧪 test-add-user.ps1                 # Test scripts
+├── 🧪 test-full-flow.ps1
+├── 🧪 test-login-flow.html
+├── 🧪 test-mysql.bat
+├── 🧪 test-session.html
+│
+└── 📁 node_modules/                     # NPM packages (auto-generated)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+QUICK REFERENCE:
+
+📦 Backend Files:
+   • Main server: backend/server.js
+   • Configuration: backend/config/
+   • Database migrations: backend/migrations/
+   • Utility scripts: backend/scripts/
+
+🎨 Frontend Files:
+   • HTML templates: frontend/views/
+   • Static assets: frontend/public/
+   • JavaScript: frontend/public/js/
+   • CSS: frontend/public/css/
+   • Source files: frontend/src/
+
+⚙️ Commands:
+   • npm run dev        → Start development server
+   • npm start          → Start production server
+   • npm run build:css  → Build Tailwind CSS
+   • npm run watch:css  → Watch & build CSS
+
+═══════════════════════════════════════════════════════════════════════════════

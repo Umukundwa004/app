@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+</head>
+<body>
+    <script>
+        // Check authentication and route to correct admin page
+        const authToken = localStorage.getItem('authToken');
+        const userData = localStorage.getItem('userData');
+        
+        if (!authToken || !userData) {
+            // Not logged in, redirect to login
+            window.location.href = '/login';
+        } else {
+            try {
+                const user = JSON.parse(userData);
+                
+                if (user.user_type === 'system_admin') {
+                    window.location.href = '/system-admin.html';
+                } else if (user.user_type === 'restaurant_admin') {
+                    window.location.href = '/restaurant-admin.html';
+                } else {
+                    // Not an admin, redirect to customer page
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

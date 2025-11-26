@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login Flow</title>
+</head>
+<body>
+    <h1>Test Login Flow</h1>
+    <button id="testLogin">Test System Admin Login</button>
+    <button id="testRestaurantLogin">Test Restaurant Admin Login</button>
+    <button id="checkSession">Check Session</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+
+        document.getElementById('testLogin').addEventListener('click', async () => {
+            output.textContent = '';
+            log('Testing System Admin Login...');
+            
+            try {
+                // Step 1: Login
+                log('Step 1: Sending login request...');
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        email: 'admin@rwandaeats.com', 
+                        password: 'admin123' 
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                log('Login Response: ' + JSON.stringify(loginData, null, 2));
+                log('Session ID from response: ' + loginData.sessionId);
+                log('Cookies: ' + document.cookie);
+
+                if (loginResponse.ok) {
+                    // Step 2: Wait a bit
+                    log('\nStep 2: Waiting 200ms for session to settle...');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // Step 3: Try to access admin page
+                    log('\nStep 3: Accessing /admin page...');
+                    const adminResponse = await fetch('/admin', {
+                        credentials: 'include'
+                    });
+                    
+                    log('Admin page status: ' + adminResponse.status);
+                    log('Admin page redirected: ' + adminResponse.redirected);
+                    log('Admin page URL: ' + adminResponse.url);
+                    
+                    if (adminResponse.redirected) {
+                        log('⚠️ REDIRECTED TO: ' + adminResponse.url);
+                    } else {
+                        log('✅ Successfully accessed admin page');
+                    }
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        });
+
+        document.getElementById('testRestaurantLogin').addEventListener('click', async () => {
+            output.textContent = '';
+            log('Testing Restaurant Admin Login...');
+            
+            try {
+                // Step 1: Login
+                log('Step 1: Sending login request...');
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ 
+                        email: 'admin@millecollines.rw', 
+                        password: 'restaurant123' 
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                log('Login Response: ' + JSON.stringify(loginData, null, 2));
+                log('Session ID from response: ' + loginData.sessionId);
+                log('Cookies: ' + document.cookie);
+
+                if (loginResponse.ok) {
+                    // Step 2: Wait a bit
+                    log('\nStep 2: Waiting 200ms for session to settle...');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // Step 3: Try to access admin page
+                    log('\nStep 3: Accessing /admin page...');
+                    const adminResponse = await fetch('/admin', {
+                        credentials: 'include'
+                    });
+                    
+                    log('Admin page status: ' + adminResponse.status);
+                    log('Admin page redirected: ' + adminResponse.redirected);
+                    log('Admin page URL: ' + adminResponse.url);
+                    
+                    if (adminResponse.redirected) {
+                        log('⚠️ REDIRECTED TO: ' + adminResponse.url);
+                    } else {
+                        log('✅ Successfully accessed admin page');
+                    }
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        });
+
+        document.getElementById('checkSession').addEventListener('click', async () => {
+            output.textContent = '';
+            log('Checking current session...');
+            
+            try {
+                const response = await fetch('/api/user/profile', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('Current user: ' + JSON.stringify(data, null, 2));
+                } else {
+                    log('Not logged in or session expired');
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

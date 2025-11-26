@@ -970,23 +970,10 @@ class SystemAdmin {
                         ${this.getStatusText(reservation.status)}
                     </span>
                 </td>
-                <td class="py-3 px-4">
-                    <div class="flex space-x-2">
-                        ${reservation.status === 'pending' ? `
-                            <button class="confirm-reservation-btn text-green-600 hover:text-green-800" data-id="${reservation.id}">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="reject-reservation-btn text-red-600 hover:text-red-800" data-id="${reservation.id}">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                </td>
             </tr>
         `).join('');
 
-        // Add event listeners
-        this.attachReservationEventListeners();
+        // Event listeners removed - no actions column
     }
 
     populateRestaurantFilters() {
@@ -1008,6 +995,15 @@ class SystemAdmin {
     }
 
     attachReservationEventListeners() {
+        // View reservation details
+        document.querySelectorAll('.view-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.viewReservationDetails(reservationId);
+            });
+        });
+
+        // Confirm pending reservation
         document.querySelectorAll('.confirm-reservation-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const reservationId = e.target.closest('button').getAttribute('data-id');
@@ -1015,10 +1011,27 @@ class SystemAdmin {
             });
         });
 
+        // Reject pending reservation
         document.querySelectorAll('.reject-reservation-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const reservationId = e.target.closest('button').getAttribute('data-id');
                 this.updateReservationStatus(reservationId, 'rejected');
+            });
+        });
+
+        // Cancel confirmed reservation
+        document.querySelectorAll('.cancel-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.updateReservationStatus(reservationId, 'cancelled');
+            });
+        });
+
+        // Delete reservation
+        document.querySelectorAll('.delete-reservation-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const reservationId = e.target.closest('button').getAttribute('data-id');
+                this.deleteReservation(reservationId);
             });
         });
     }
@@ -1332,6 +1345,132 @@ class SystemAdmin {
             console.error('Error updating reservation status:', error);
             this.showNotification('Error updating reservation status', 'error');
         }
+    }
+
+    async deleteReservation(reservationId) {
+        if (!confirm('Are you sure you want to delete this reservation? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/reservations/${reservationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                this.showNotification('Reservation deleted successfully', 'success');
+                this.loadAllReservations();
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error || 'Failed to delete reservation', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting reservation:', error);
+            this.showNotification('Error deleting reservation', 'error');
+        }
+    }
+
+    viewReservationDetails(reservationId) {
+        const reservation = this.reservations.find(r => r.id == reservationId);
+        if (!reservation) {
+            this.showNotification('Reservation not found', 'error');
+            return;
+        }
+
+        const modalHtml = `
+            <div class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50" id="reservation-details-modal">
+                <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-900">Reservation Details</h2>
+                        <button class="text-gray-500 hover:text-gray-700" onclick="document.getElementById('reservation-details-modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4 text-gray-900">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-gray-600 text-sm">Reservation ID</p>
+                                <p class="font-semibold">#${reservation.id}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600 text-sm">Status</p>
+                                <span class="px-2 py-1 rounded-full text-xs ${this.getStatusClass(reservation.status)}">
+                                    ${this.getStatusText(reservation.status)}
+                                </span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">Customer Information</h3>
+                            <div class="space-y-2">
+                                <p><span class="text-gray-600">Name:</span> ${reservation.customer_name}</p>
+                                <p><span class="text-gray-600">Email:</span> ${reservation.customer_email}</p>
+                                ${reservation.customer_phone ? `<p><span class="text-gray-600">Phone:</span> ${reservation.customer_phone}</p>` : ''}
+                            </div>
+                        </div>
+                        <hr>
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">Restaurant Information</h3>
+                            <div class="space-y-2">
+                                <p><span class="text-gray-600">Name:</span> ${reservation.restaurant_name}</p>
+                                ${reservation.restaurant_location ? `<p><span class="text-gray-600">Location:</span> ${reservation.restaurant_location}</p>` : ''}
+                            </div>
+                        </div>
+                        <hr>
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">Reservation Details</h3>
+                            <div class="space-y-2">
+                                <p><span class="text-gray-600">Date:</span> ${this.formatDate(reservation.reservation_date)}</p>
+                                <p><span class="text-gray-600">Time:</span> ${this.formatTime(reservation.reservation_time)}</p>
+                                <p><span class="text-gray-600">Party Size:</span> ${reservation.party_size} people</p>
+                                ${reservation.special_requests ? `<p><span class="text-gray-600">Special Requests:</span> ${reservation.special_requests}</p>` : ''}
+                            </div>
+                        </div>
+                        ${reservation.created_at ? `
+                        <hr>
+                        <div>
+                            <p class="text-sm text-gray-600">Created: ${this.formatDate(reservation.created_at)}</p>
+                            ${reservation.updated_at ? `<p class="text-sm text-gray-600">Last Updated: ${this.formatDate(reservation.updated_at)}</p>` : ''}
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        ${reservation.status === 'pending' ? `
+                            <button onclick="systemAdmin.updateReservationStatus(${reservation.id}, 'confirmed'); document.getElementById('reservation-details-modal').remove();" 
+                                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-check mr-2"></i>Confirm
+                            </button>
+                            <button onclick="systemAdmin.updateReservationStatus(${reservation.id}, 'rejected'); document.getElementById('reservation-details-modal').remove();" 
+                                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                                <i class="fas fa-times mr-2"></i>Reject
+                            </button>
+                        ` : ''}
+                        ${reservation.status === 'confirmed' ? `
+                            <button onclick="systemAdmin.updateReservationStatus(${reservation.id}, 'cancelled'); document.getElementById('reservation-details-modal').remove();" 
+                                class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition">
+                                <i class="fas fa-ban mr-2"></i>Cancel
+                            </button>
+                        ` : ''}
+                        <button onclick="document.getElementById('reservation-details-modal').remove()" 
+                            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove any existing modal
+        const existingModal = document.getElementById('reservation-details-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
     }
 
     // Utility methods
@@ -1813,11 +1952,13 @@ class SystemAdmin {
 }
 
 // Initialize the system admin when the page loads (robust to script load timing)
+let systemAdmin; // Global instance
+
 function startSystemAdmin() {
     try {
         // small console hint to help debugging initialization issues
         console.debug('SystemAdmin: initializing');
-        new SystemAdmin();
+        systemAdmin = new SystemAdmin();
     } catch (e) {
         console.error('Failed to initialize SystemAdmin', e);
     }
