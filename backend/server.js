@@ -137,11 +137,24 @@ app.use(session({
 // NOTE: On Vercel you CANNOT connect to a local 127.0.0.1 database.
 // Use a remote MySQL provider (PlanetScale, AWS RDS, DigitalOcean, etc.) and set all DB_* env vars.
 // Added optional SSL and explicit port + removed hard-coded password fallback for production safety.
+
+// Validate required database environment variables in production
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    const requiredDbVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+    const missingVars = requiredDbVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        console.error('❌ CRITICAL: Missing required database environment variables:', missingVars);
+        console.error('🔧 Please set these in your Vercel dashboard under Settings → Environment Variables');
+        console.error('📖 See URGENT_FIX.md for step-by-step instructions');
+    }
+}
+
 const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'vestine004',
+    user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
+    password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
     database: process.env.DB_NAME || 'rwanda_eats_reserve',
     waitForConnections: true,
     connectionLimit: parseInt(process.env.DB_CONN_LIMIT || '10', 10),
@@ -1121,6 +1134,27 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
     
     req.session.destroy();
     res.json({ message: 'Logout successful' });
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    const status = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: DB_READY ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development',
+        version: '1.0.0'
+    };
+    
+    if (!DB_READY) {
+        return res.status(503).json({
+            ...status,
+            status: 'degraded',
+            message: 'Database connection unavailable'
+        });
+    }
+    
+    res.json(status);
 });
 
 // Get current user
@@ -2516,15 +2550,32 @@ END RESTAURANT DETAILS MANAGEMENT API
 // Remove immediate listen; start server after verifying DB + email transporter
 // Startup routine: verify DB connection and email transporter, then start listening
 (async function startServer() {
+    // Log connection attempt details for debugging
+    console.log('🔧 Database Configuration:');
+    console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
+    console.log(`   Port: ${process.env.DB_PORT || '3306'}`);
+    console.log(`   User: ${process.env.DB_USER || 'root'}`);
+    console.log(`   Database: ${process.env.DB_NAME || 'rwanda_eats_reserve'}`);
+    console.log(`   SSL: ${process.env.DB_SSL || 'false'}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Vercel: ${process.env.VERCEL ? 'true' : 'false'}`);
+    
     try {
+        console.log('🔌 Attempting database connection...');
         await db.execute('SELECT 1');
         DB_READY = true;
-        console.log('Database connection OK');
+        console.log('✅ Database connection OK');
     } catch (err) {
-        console.error('Failed to connect to the database. Check remote DB host, credentials, and networking.');
-        console.error('DB connection error code:', err.code);
-        // Do NOT exit in serverless; allow health endpoints / static assets to serve.
-        DB_READY = false;
+        console.error('❌ Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
+        console.error('🔧 Error details:', err);
+        
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+            console.error('🚨 PRODUCTION ERROR: You need to set up a cloud database!');
+            console.error('📖 See URGENT_FIX.md for instructions');
+            DB_READY = false;
+        } else {
+            process.exit(1);
+        }
     }
 
     try {
@@ -2548,6 +2599,9 @@ END RESTAURANT DETAILS MANAGEMENT API
         console.log(`Admin login: http://localhost:${PORT}/login`);
     });
 })();
+
+// Export the app for serverless platforms like Vercel
+module.exports = app;
 // Add this route to serve the registration page
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'register.html'));

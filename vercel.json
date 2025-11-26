@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
+      "src": "/login",
+      "dest": "/frontend/views/login.html"
+    },
+    {
+      "src": "/register",
+      "dest": "/frontend/views/register.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/frontend/views/system-admin.html"
+    },
+    {
+      "src": "/restaurant-admin",
+      "dest": "/frontend/views/restaurant-admin.html"
+    },
+    {
+      "src": "/customer",
+      "dest": "/frontend/views/customer.html"
+    },
+    {
+      "src": "/public/(.*)",
+      "dest": "/frontend/public/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/frontend/public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/frontend/public/js/$1"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "/frontend/public/uploads/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/views/home.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "backend/server.js": {
+      "maxDuration": 30
+    }
+  }
+}
