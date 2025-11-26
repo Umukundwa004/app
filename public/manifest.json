@@ -1,0 +1,32 @@
+{
+  "name": "Rwanda Eats Reserve",
+  "short_name": "RER",
+  "description": "Restaurant Reservation System for Rwanda",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#977669",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/views/images/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/views/images/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "lifestyle", "business"],
+  "screenshots": [
+    {
+      "src": "/views/images/logo.jpeg",
+      "sizes": "540x720",
+      "type": "image/jpeg"
+    }
+  ]
+}

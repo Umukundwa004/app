@@ -1,0 +1,19 @@
+/* Input CSS file for Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer components {
+  .btn-primary {
+    @apply bg-brand-green text-white px-6 py-3 rounded-lg hover:bg-brand-green-dark transition duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-accent-orange text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-card p-6;
+  }
+}

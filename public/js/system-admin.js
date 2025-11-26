@@ -59,6 +59,22 @@ class SystemAdmin {
             });
         });
 
+        // Mobile bottom navigation
+        document.querySelectorAll('.mobile-admin-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = link.getAttribute('data-tab');
+                this.switchTab(tab);
+                // Update active states
+                document.querySelectorAll('.mobile-admin-nav-link').forEach(l => {
+                    l.classList.remove('active', 'text-gray-600');
+                    l.classList.add('text-gray-400');
+                });
+                link.classList.add('active', 'text-gray-600');
+                link.classList.remove('text-gray-400');
+            });
+        });
+
         // Logout
         document.getElementById('logout-btn').addEventListener('click', () => {
             this.logout();
@@ -97,6 +113,25 @@ class SystemAdmin {
             this.closeUserModal();
         });
 
+        // Password visibility toggle
+        const togglePasswordBtn = document.getElementById('toggle-password-visibility');
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const passwordInput = document.getElementById('user-password');
+                const eyeIcon = document.getElementById('password-eye-icon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                }
+            });
+        }
+
         // Restaurant management
         const addRestaurantBtn = document.getElementById('add-restaurant-btn');
         if (addRestaurantBtn) {
@@ -112,6 +147,23 @@ class SystemAdmin {
                 this.saveRestaurant();
             });
         }
+
+        // Toggle admin sections based on radio selection
+        const adminRadios = document.querySelectorAll('input[name="admin-option"]');
+        adminRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const existingSection = document.getElementById('existing-admin-section');
+                const newSection = document.getElementById('new-admin-section');
+                
+                if (e.target.value === 'create') {
+                    if (existingSection) existingSection.classList.add('hidden');
+                    if (newSection) newSection.classList.remove('hidden');
+                } else {
+                    if (existingSection) existingSection.classList.remove('hidden');
+                    if (newSection) newSection.classList.add('hidden');
+                }
+            });
+        });
 
         // Note: Save/Cancel buttons for the restaurant modal were removed from the DOM
         // so explicit event listeners for those IDs were removed to avoid unused handlers.
@@ -573,6 +625,13 @@ class SystemAdmin {
             }
 
             const response = await fetch(url);
+            
+            if (response.status === 403) {
+                this.showNotification('Session expired. Please log in again.', 'error');
+                setTimeout(() => window.location.href = '/login', 2000);
+                return;
+            }
+            
             if (!response.ok) throw new Error('Failed to load users');
             
             this.users = await response.json();
@@ -1052,14 +1111,25 @@ class SystemAdmin {
     openUserModal(user = null) {
         const modal = document.getElementById('user-modal');
         const title = document.getElementById('user-modal-title');
+        const passwordInput = document.getElementById('user-password');
+        const requiredIndicator = document.getElementById('password-required-indicator');
+        const optionalText = document.getElementById('password-optional-text');
         
         if (user) {
             title.textContent = 'Edit User';
             this.populateUserForm(user);
+            // Password is optional when editing
+            if (passwordInput) passwordInput.removeAttribute('required');
+            if (requiredIndicator) requiredIndicator.classList.add('hidden');
+            if (optionalText) optionalText.classList.remove('hidden');
         } else {
             title.textContent = 'Add User';
             document.getElementById('user-form').reset();
             document.getElementById('user-id').value = '';
+            // Password is required when creating
+            if (passwordInput) passwordInput.setAttribute('required', 'required');
+            if (requiredIndicator) requiredIndicator.classList.remove('hidden');
+            if (optionalText) optionalText.classList.add('hidden');
         }
         
         modal.classList.remove('hidden');
@@ -1101,11 +1171,23 @@ class SystemAdmin {
         };
 
         const password = document.getElementById('user-password').value;
+        const userId = document.getElementById('user-id').value;
+        
+        // Password is required when creating new user
+        if (!userId && !password) {
+            const errMsg = 'Password is required when creating a new user';
+            if (feedback) feedback.textContent = errMsg;
+            this.showNotification(errMsg, 'error');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = saveBtn.dataset.origHtml || 'Save User';
+            }
+            return;
+        }
+        
         if (password) {
             formData.password = password;
         }
-
-        const userId = document.getElementById('user-id').value;
         const url = userId ? `/api/system-admin/users/${userId}` : '/api/system-admin/users';
         const method = userId ? 'PUT' : 'POST';
 
@@ -1142,9 +1224,21 @@ class SystemAdmin {
     }
 
     async editUser(userId) {
-        const user = this.users.find(u => u.id == userId);
-        if (user) {
+        try {
+            const response = await fetch(`/api/system-admin/users/${userId}`);
+            if (response.status === 403) {
+                this.showNotification('Access denied. Please log in as system admin.', 'error');
+                setTimeout(() => window.location.href = '/login', 2000);
+                return;
+            }
+            if (!response.ok) {
+                throw new Error('Failed to load user data');
+            }
+            const user = await response.json();
             this.openUserModal(user);
+        } catch (error) {
+            console.error('Error loading user:', error);
+            this.showNotification('Error loading user data', 'error');
         }
     }
 
@@ -1576,12 +1670,11 @@ class SystemAdmin {
         if (adminOption === 'create') {
             const adminName = document.getElementById('new-admin-name').value;
             const adminEmail = document.getElementById('new-admin-email').value;
-            const adminLoginEmail = document.getElementById('new-admin-login-email') ? document.getElementById('new-admin-login-email').value : '';
-            const adminPhone = document.getElementById('new-admin-phone').value;
-            const adminPassword = document.getElementById('new-admin-password').value;
+            const adminPhone = document.getElementById('new-admin-phone') ? document.getElementById('new-admin-phone').value : '';
+            const adminPassword = document.getElementById('new-admin-password') ? document.getElementById('new-admin-password').value : '';
             
             if (!adminName || !adminEmail || !adminPassword) {
-                const msg = 'Please fill in all admin fields (Name, Email, Password)';
+                const msg = 'Please fill in all required admin fields (Name, Email, Password)';
                 if (feedback) feedback.textContent = msg;
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = saveBtn.dataset.origHtml || 'Save Restaurant'; }
                 return;
@@ -1590,8 +1683,7 @@ class SystemAdmin {
             formData.append('create_new_admin', 'true');
             formData.append('admin_name', adminName);
             formData.append('admin_email', adminEmail);
-            if (adminLoginEmail) formData.append('admin_login_email', adminLoginEmail);
-            formData.append('admin_phone', adminPhone);
+            if (adminPhone) formData.append('admin_phone', adminPhone);
             formData.append('admin_password', adminPassword);
         } else {
             formData.append('restaurant_admin_id', document.getElementById('restaurant-admin-select').value);

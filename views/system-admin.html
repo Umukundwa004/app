@@ -19,9 +19,17 @@
             .container { padding: 0.5rem; }
         }
     </style>
-</head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Rwanda Eats Reserve - System Administration">
+    <meta name="theme-color" content="#977669">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Rwanda Eats">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/views/images/logo.jpeg">
     <title>System Admin - Rwanda Eats Reserve</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -59,16 +67,16 @@
 <body class="bg-cream-50">
     <!-- Header -->
     <header class="bg-brown-800 text-white shadow-lg sticky top-0 z-40">
-        <div class="container mx-auto px-4 py-4">
+        <div class="container mx-auto px-2 md:px-4 py-2 md:py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center">
-                    <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-12 w-12 rounded-lg object-cover mr-3" />
-                    <h1 class="text-2xl font-bold">Rwanda Eats Reserve - System Admin</h1>
+                    <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-8 w-8 md:h-12 md:w-12 rounded-lg object-cover mr-2 md:mr-3" />
+                    <h1 class="text-sm md:text-2xl font-bold">Rwanda Eats - Admin</h1>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span id="admin-name" class="text-gray-200"></span>
-                    <button id="logout-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
-                        Logout
+                <div class="flex items-center space-x-1 md:space-x-4">
+                    <span id="admin-name" class="text-gray-200 hidden md:inline"></span>
+                    <button id="logout-btn" class="bg-brown-600 text-white px-2 py-1 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-brown-700 transition">
+                        <i class="fas fa-sign-out-alt md:mr-1"></i><span class="hidden md:inline">Logout</span>
                     </button>
                 </div>
             </div>
@@ -76,9 +84,9 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-8 pb-20 md:pb-8">
         <!-- Tabs -->
-        <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="bg-white rounded-lg shadow-md mb-6 hidden md:block">
             <div class="border-b border-gray-200">
                 <nav class="flex -mb-px overflow-x-auto">
                     <button id="dashboard-tab" class="tab-button py-4 px-6 text-center border-b-2 border-brown-600 font-medium text-gray-600 whitespace-nowrap">
@@ -655,8 +663,15 @@
                             <div id="new-admin-section" class="mb-4 hidden">
                                 <label for="new-admin-name" class="block text-sm font-medium text-gray-700">Admin Name</label>
                                 <input type="text" id="new-admin-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="Full name of new admin">
+                                
                                 <label for="new-admin-email" class="block text-sm font-medium text-gray-700 mt-3">Admin Email</label>
                                 <input type="email" id="new-admin-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="admin@example.com">
+                                
+                                <label for="new-admin-phone" class="block text-sm font-medium text-gray-700 mt-3">Admin Phone</label>
+                                <input type="tel" id="new-admin-phone" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="+250 XXX XXX XXX">
+                                
+                                <label for="new-admin-password" class="block text-sm font-medium text-gray-700 mt-3">Admin Password <span class="text-red-600">*</span></label>
+                                <input type="password" id="new-admin-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500" placeholder="Create a password">
                             </div>
                         </div>
                     </div>
@@ -713,18 +728,56 @@
                         </select>
                     </div>
                     <div>
-                        <label for="user-password" class="block text-sm font-medium text-gray-700">Password (leave blank to keep unchanged)</label>
-                        <input type="password" id="user-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500">
+                        <label for="user-password" class="block text-sm font-medium text-gray-700">
+                            Password <span id="password-required-indicator" class="text-red-600">*</span>
+                            <span id="password-optional-text" class="text-gray-500 text-xs hidden">(leave blank to keep unchanged)</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="user-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500 pr-10">
+                            <button type="button" id="toggle-password-visibility" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none mt-0.5">
+                                <i class="fas fa-eye" id="password-eye-icon"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="mt-8 flex justify-end space-x-4">
                     <button type="button" id="cancel-user" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Cancel</button>
-                    <!-- Save User button removed -->
+                    <button type="submit" id="save-user-btn" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">Save User</button>
                 </div>
                 <div id="user-form-feedback" class="text-sm mt-2 text-red-600"></div>
             </form>
         </div>
     </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav id="mobile-admin-nav" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-2 px-1">
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-600 active px-1 py-1" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt text-base mb-1"></i>
+                <span class="text-[0.65rem]">Dashboard</span>
+            </a>
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-400 px-1 py-1" data-tab="users">
+                <i class="fas fa-users text-base mb-1"></i>
+                <span class="text-[0.65rem]">Users</span>
+            </a>
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-400 px-1 py-1" data-tab="restaurants">
+                <i class="fas fa-store text-base mb-1"></i>
+                <span class="text-[0.65rem]">Restaurants</span>
+            </a>
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-400 px-1 py-1" data-tab="reservations">
+                <i class="fas fa-calendar-alt text-base mb-1"></i>
+                <span class="text-[0.65rem]">Bookings</span>
+            </a>
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-400 px-1 py-1" data-tab="system">
+                <i class="fas fa-cog text-base mb-1"></i>
+                <span class="text-[0.65rem]">Settings</span>
+            </a>
+            <a href="#" class="mobile-admin-nav-link flex flex-col items-center text-xs text-gray-400 px-1 py-1" data-tab="audit">
+                <i class="fas fa-shield-alt text-base mb-1"></i>
+                <span class="text-[0.65rem]">Audit</span>
+            </a>
+        </div>
+    </nav>
 
     <script src="/js/system-admin.js"></script>
 </body>

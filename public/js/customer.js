@@ -484,6 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
         featuredRestaurants.innerHTML = restaurants.map(restaurant => {
             const rating = parseFloat(restaurant.rating) || 0;
             const cuisineArray = restaurant.cuisine_types ? restaurant.cuisine_types.split(',').map(c => c.trim()) : [];
+            // Check if rating display is enabled (default to true if not set)
+            const showRating = restaurant.rating_display !== false && rating > 0;
             
             return `
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all restaurant-card-enhanced">
@@ -492,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="w-full h-full object-cover">`
                         : `<i class="fas fa-utensils text-3xl md:text-4xl text-gray-400"></i>`
                     }
-                    ${rating > 0 ? `
+                    ${showRating ? `
                     <div class="absolute top-2 right-2 restaurant-card-rating">
                         <i class="fas fa-star star-icon"></i>
                         <span>${rating.toFixed(1)}</span>
@@ -533,6 +535,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const rating = parseFloat(restaurant.rating) || 0;
             const cuisineArray = restaurant.cuisine_types ? restaurant.cuisine_types.split(',').map(c => c.trim()) : [];
             const isFavorite = favorites.includes(restaurant.id.toString());
+            // Check if rating display is enabled (default to true if not set)
+            const showRating = restaurant.rating_display !== false && rating > 0;
             
             return `
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all restaurant-card-enhanced">
@@ -544,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="favorite-heart-btn ${isFavorite ? 'active' : ''}" data-id="${restaurant.id}" onclick="toggleFavorite(event, '${restaurant.id}')">
                         💙
                     </button>
-                    ${rating > 0 ? `
+                    ${showRating ? `
                     <div class="absolute top-2 right-2 restaurant-card-rating">
                         <i class="fas fa-star star-icon"></i>
                         <span>${rating.toFixed(1)}</span>
@@ -648,14 +652,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize Google Map
             initializeRestaurantMap(restaurant);
             
-            // Update rating badge
+            // Update rating badge - respect rating_display setting
             const ratingBadge = document.getElementById('details-rating-badge');
             const rating = parseFloat(restaurant.rating) || 0;
-            if (ratingBadge) {
+            // Check if rating display is enabled (default to true if not set)
+            if (ratingBadge && restaurant.rating_display !== false && rating > 0) {
                 ratingBadge.innerHTML = `
                     <i class="fas fa-star text-yellow-500"></i>
                     <span class="font-semibold text-gray-900">${rating.toFixed(1)}</span>
                 `;
+            } else if (ratingBadge) {
+                ratingBadge.innerHTML = '';
             }
             
             // Populate cuisine badges
@@ -682,22 +689,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 headerImage.innerHTML = `<div class="flex items-center justify-center h-full bg-gradient-to-br from-gray-800 to-gray-600"><i class="fas fa-utensils text-6xl text-gray-300"></i></div>`;
             }
             
-            // Display image gallery (if more than 1 image)
+            // Display image gallery (if more than 1 image) and gallery is enabled
             const galleryContainer = document.getElementById('restaurant-gallery-container');
             const galleryElement = document.getElementById('restaurant-gallery');
             
-            if (images && images.length > 1) {
-                galleryElement.innerHTML = images
-                    .sort((a, b) => a.display_order - b.display_order)
-                    .map(img => `
-                        <div class="relative cursor-pointer hover:opacity-80 transition rounded-lg overflow-hidden" onclick="document.getElementById('restaurant-header-image').innerHTML = '<img src=\\'${img.image_url}\\' alt=\\'${restaurant.name}\\' class=\\'w-full h-full object-cover\\'>'">
-                            <img src="${img.image_url}" alt="${restaurant.name}" class="w-full h-20 md:h-24 object-cover">
-                            ${img.is_primary ? '<div class="absolute top-1 left-1 bg-brown-600 text-white text-xs px-2 py-0.5 rounded-full">Primary</div>' : ''}
-                        </div>
-                    `).join('');
-                galleryContainer.classList.remove('hidden');
-            } else {
-                galleryContainer.classList.add('hidden');
+            // Fetch settings to check if gallery is enabled
+            try {
+                const settingsResponse = await fetch(`/api/restaurants/${restaurant.id}/settings`);
+                const settings = settingsResponse.ok ? await settingsResponse.json() : {};
+                
+                // Show gallery only if enabled and there are multiple images
+                if (settings.gallery_enabled !== false && images && images.length > 1) {
+                    galleryElement.innerHTML = images
+                        .sort((a, b) => a.display_order - b.display_order)
+                        .map(img => `
+                            <div class="relative cursor-pointer hover:opacity-80 transition rounded-lg overflow-hidden" onclick="document.getElementById('restaurant-header-image').innerHTML = '<img src=\\'${img.image_url}\\' alt=\\'${restaurant.name}\\' class=\\'w-full h-full object-cover\\'>'">
+                                <img src="${img.image_url}" alt="${restaurant.name}" class="w-full h-20 md:h-24 object-cover">
+                                ${img.is_primary ? '<div class="absolute top-1 left-1 bg-brown-600 text-white text-xs px-2 py-0.5 rounded-full">Primary</div>' : ''}
+                            </div>
+                        `).join('');
+                    galleryContainer.classList.remove('hidden');
+                } else {
+                    galleryContainer.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading gallery settings:', error);
+                // Default behavior: show gallery if there are multiple images
+                if (images && images.length > 1) {
+                    galleryElement.innerHTML = images
+                        .sort((a, b) => a.display_order - b.display_order)
+                        .map(img => `
+                            <div class="relative cursor-pointer hover:opacity-80 transition rounded-lg overflow-hidden" onclick="document.getElementById('restaurant-header-image').innerHTML = '<img src=\\'${img.image_url}\\' alt=\\'${restaurant.name}\\' class=\\'w-full h-full object-cover\\'>'">
+                                <img src="${img.image_url}" alt="${restaurant.name}" class="w-full h-20 md:h-24 object-cover">
+                                ${img.is_primary ? '<div class="absolute top-1 left-1 bg-brown-600 text-white text-xs px-2 py-0.5 rounded-full">Primary</div>' : ''}
+                            </div>
+                        `).join('');
+                    galleryContainer.classList.remove('hidden');
+                } else {
+                    galleryContainer.classList.add('hidden');
+                }
             }
             
             // Handle amenities - fetch from API

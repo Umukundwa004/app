@@ -7,6 +7,11 @@ class RestaurantAdmin {
         this.reservations = [];
         this.restaurants = [];
         this.menuItems = [];
+        this.notificationsModal = null;
+        this.notificationBadgeDesktop = null;
+        this.notificationBadgeMobile = null;
+        this.statusChart = null;
+        this.dailyChart = null;
         
         this.init();
     }
@@ -14,8 +19,13 @@ class RestaurantAdmin {
     async init() {
         await this.checkAuth();
         this.setupEventListeners();
+        this.setupNotifications();
         this.loadDashboardData();
         this.loadMyRestaurants();
+        this.updateNotificationBadge();
+        
+        // Poll for new notifications every 30 seconds
+        setInterval(() => this.updateNotificationBadge(), 30000);
     }
 
     async checkAuth() {
@@ -91,6 +101,30 @@ class RestaurantAdmin {
             if (addAmenityBtn) {
                 addAmenityBtn.addEventListener('click', () => this.openAddAmenityModal());
             }
+
+            // Upload image button
+            const uploadImageBtn = document.getElementById('upload-image-btn');
+            if (uploadImageBtn) {
+                uploadImageBtn.addEventListener('click', () => this.openImageUploadModal());
+            }
+        }
+
+        // Notifications
+        const notificationsBtnDesktop = document.getElementById('notifications-btn-desktop');
+        if (notificationsBtnDesktop) {
+            notificationsBtnDesktop.addEventListener('click', () => this.openNotifications());
+        }
+        
+        const notificationsBtnMobile = document.getElementById('notifications-btn-mobile');
+        if (notificationsBtnMobile) {
+            notificationsBtnMobile.addEventListener('click', () => this.openNotifications());
+        }
+        
+        const closeNotifications = document.getElementById('close-notifications');
+        if (closeNotifications) {
+            closeNotifications.addEventListener('click', () => {
+                this.notificationsModal.classList.add('hidden');
+            });
         }
 
         // Logout
@@ -123,6 +157,14 @@ class RestaurantAdmin {
         document.getElementById('close-restaurant-modal').addEventListener('click', () => {
             this.closeRestaurantModal();
         });
+
+        // Reservation details modal close button
+        const closeReservationDetailsBtn = document.getElementById('close-reservation-details');
+        if (closeReservationDetailsBtn) {
+            closeReservationDetailsBtn.addEventListener('click', () => {
+                this.closeReservationDetailsModal();
+            });
+        }
 
         // File upload previews - Multiple images
         document.getElementById('restaurant-images').addEventListener('change', (e) => {
@@ -167,6 +209,7 @@ class RestaurantAdmin {
 
         document.getElementById('menu-item-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            console.log('Menu item form submitted');
             this.saveMenuItem();
         });
 
@@ -213,6 +256,21 @@ class RestaurantAdmin {
         document.getElementById('generate-report-btn').addEventListener('click', () => {
             this.generateReport();
         });
+        
+        // Report downloads
+        const downloadCsvBtn = document.getElementById('download-csv-btn');
+        if (downloadCsvBtn) {
+            downloadCsvBtn.addEventListener('click', () => {
+                this.downloadReport('csv');
+            });
+        }
+        
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        if (downloadPdfBtn) {
+            downloadPdfBtn.addEventListener('click', () => {
+                this.downloadReport('pdf');
+            });
+        }
 
         // Close modals on outside click
         window.addEventListener('click', (e) => {
@@ -348,8 +406,13 @@ class RestaurantAdmin {
             let url = '/api/restaurant-admin/reservations';
             const params = new URLSearchParams();
             
-            if (filter !== 'all') params.append('status', filter);
-            if (restaurantFilter !== 'all') params.append('restaurant_id', restaurantFilter);
+            // Handle status filters (but not "today" which is a date filter)
+            if (filter !== 'all' && filter !== 'today') {
+                params.append('status', filter);
+            }
+            if (restaurantFilter !== 'all') {
+                params.append('restaurant_id', restaurantFilter);
+            }
             
             if (params.toString()) {
                 url += '?' + params.toString();
@@ -358,7 +421,56 @@ class RestaurantAdmin {
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to load reservations');
             
-            this.reservations = await response.json();
+            let reservations = await response.json();
+            
+            // Handle "today" filter on the client side
+            if (filter === 'today') {
+                // Get today's date in local timezone
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+                
+                console.log('📅 Filtering for TODAY:', todayStr);
+                console.log('📅 Current time:', today.toString());
+                
+                // Show all reservation dates for debugging
+                if (reservations.length > 0) {
+                    console.log('📋 All reservations:');
+                    reservations.forEach((r, idx) => {
+                        let resDate = r.reservation_date;
+                        if (typeof resDate === 'string') {
+                            // Handle various string formats
+                            resDate = resDate.split('T')[0]; // Get YYYY-MM-DD part
+                        } else if (resDate instanceof Date) {
+                            const y = resDate.getFullYear();
+                            const m = String(resDate.getMonth() + 1).padStart(2, '0');
+                            const d = String(resDate.getDate()).padStart(2, '0');
+                            resDate = `${y}-${m}-${d}`;
+                        }
+                        const isToday = resDate === todayStr ? '✅ TODAY' : '';
+                        console.log(`  ${idx + 1}. Date: ${resDate} ${isToday} | Restaurant: ${r.restaurant_name} | Customer: ${r.customer_name}`);
+                    });
+                }
+                
+                reservations = reservations.filter(r => {
+                    let reservationDate = r.reservation_date;
+                    if (typeof reservationDate === 'string') {
+                        reservationDate = reservationDate.split('T')[0];
+                    } else if (reservationDate instanceof Date) {
+                        const y = reservationDate.getFullYear();
+                        const m = String(reservationDate.getMonth() + 1).padStart(2, '0');
+                        const d = String(reservationDate.getDate()).padStart(2, '0');
+                        reservationDate = `${y}-${m}-${d}`;
+                    }
+                    return reservationDate === todayStr;
+                });
+                
+                console.log(`✅ Found ${reservations.length} reservation(s) for today (${todayStr})`);
+            }
+            
+            this.reservations = reservations;
             this.displayReservations();
         } catch (error) {
             console.error('Error loading reservations:', error);
@@ -382,7 +494,7 @@ class RestaurantAdmin {
         
         // Desktop table view
         container.innerHTML = this.reservations.map(reservation => `
-            <tr class="border-b border-gray-200 hover:bg-brown-50">
+            <tr class="border-b border-gray-200 hover:bg-brown-50" data-reservation-id="${reservation.id}">
                 <td class="py-3 px-4">${reservation.id}</td>
                 <td class="py-3 px-4">
                     <div class="font-medium">${reservation.customer_name}</div>
@@ -902,6 +1014,8 @@ class RestaurantAdmin {
             return;
         }
 
+        console.log('Opening menu item modal for restaurant:', restaurantId);
+
         const modal = document.getElementById('menu-item-modal');
         const title = document.getElementById('menu-item-modal-title');
         
@@ -913,6 +1027,7 @@ class RestaurantAdmin {
             document.getElementById('menu-item-form').reset();
             document.getElementById('menu-item-id').value = '';
             document.getElementById('menu-item-restaurant-id').value = restaurantId;
+            console.log('Restaurant ID set to:', restaurantId);
         }
         
         modal.classList.remove('hidden');
@@ -942,9 +1057,13 @@ class RestaurantAdmin {
             restaurant_id: document.getElementById('menu-item-restaurant-id').value
         };
 
+        console.log('Saving menu item with data:', formData);
+
         const menuItemId = document.getElementById('menu-item-id').value;
         const url = menuItemId ? `/api/menu-items/${menuItemId}` : '/api/menu-items';
         const method = menuItemId ? 'PUT' : 'POST';
+
+        console.log(`Sending ${method} request to ${url}`);
 
         try {
             const response = await fetch(url, {
@@ -952,8 +1071,12 @@ class RestaurantAdmin {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify(formData)
             });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
 
             if (response.ok) {
                 this.showNotification('Menu item saved successfully', 'success');
@@ -961,7 +1084,15 @@ class RestaurantAdmin {
                 this.loadMenuItems(formData.restaurant_id);
             } else {
                 const error = await response.json();
-                this.showNotification(error.error, 'error');
+                console.error('Server error response:', error);
+                console.error('Response status:', response.status);
+                if (response.status === 403) {
+                    console.error('Authentication issue - checking current user session');
+                    const userCheck = await fetch('/api/user');
+                    const userData = await userCheck.json();
+                    console.error('Current user data:', userData);
+                }
+                this.showNotification(error.error || 'Failed to save menu item', 'error');
             }
         } catch (error) {
             console.error('Error saving menu item:', error);
@@ -1157,10 +1288,174 @@ class RestaurantAdmin {
             if (!response.ok) throw new Error('Failed to generate report');
             
             const reportData = await response.json();
+            this.currentReportData = reportData; // Store for download
+            this.currentReportFilters = { restaurantId, startDate, endDate }; // Store filters
             this.displayReport(reportData);
+            
+            // Show download buttons
+            document.getElementById('download-buttons').classList.remove('hidden');
         } catch (error) {
             console.error('Error generating report:', error);
             this.showNotification('Error generating report', 'error');
+        }
+    }
+
+    downloadReport(format) {
+        if (!this.currentReportData) {
+            this.showNotification('Please generate a report first', 'error');
+            return;
+        }
+
+        if (format === 'csv') {
+            this.downloadCSV();
+        } else if (format === 'pdf') {
+            this.downloadPDF();
+        }
+    }
+
+    downloadCSV() {
+        const { dailyData, statusSummary } = this.currentReportData;
+        const { startDate, endDate } = this.currentReportFilters;
+        
+        // Create CSV content
+        let csv = 'Restaurant Reservations Report\n';
+        csv += `Period: ${startDate} to ${endDate}\n\n`;
+        
+        // Summary section
+        csv += 'Summary\n';
+        csv += `Total Reservations,${statusSummary.total || 0}\n`;
+        csv += `Confirmed,${statusSummary.confirmed || 0}\n`;
+        csv += `Pending,${statusSummary.pending || 0}\n`;
+        csv += `Rejected,${statusSummary.rejected || 0}\n`;
+        csv += `Cancelled,${statusSummary.cancelled || 0}\n\n`;
+        
+        // Daily data header
+        csv += 'Date,Total Reservations,Confirmed,Pending,Cancelled,Occupancy Rate\n';
+        
+        // Daily data rows
+        if (dailyData && dailyData.length > 0) {
+            dailyData.forEach(day => {
+                csv += `${day.date},${day.total_reservations},${day.confirmed},${day.pending},${day.cancelled},${day.occupancy_rate}%\n`;
+            });
+        }
+        
+        // Create download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `restaurant-report-${startDate}-to-${endDate}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        this.showNotification('CSV report downloaded successfully', 'success');
+    }
+
+    downloadPDF() {
+        const { dailyData, statusSummary } = this.currentReportData;
+        const { startDate, endDate } = this.currentReportFilters;
+        
+        try {
+            // Create new PDF document
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(18);
+            doc.setTextColor(151, 118, 105); // Brown color
+            doc.text('Restaurant Reservations Report', 14, 20);
+            
+            // Add metadata
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Period: ${startDate} to ${endDate}`, 14, 30);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 36);
+            
+            // Add summary section
+            doc.setFontSize(14);
+            doc.setTextColor(151, 118, 105);
+            doc.text('Summary', 14, 48);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            let yPos = 56;
+            doc.text(`Total Reservations: ${statusSummary.total || 0}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Confirmed: ${statusSummary.confirmed || 0}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Pending: ${statusSummary.pending || 0}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Rejected: ${statusSummary.rejected || 0}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Cancelled: ${statusSummary.cancelled || 0}`, 14, yPos);
+            
+            // Add daily breakdown table
+            yPos += 12;
+            doc.setFontSize(14);
+            doc.setTextColor(151, 118, 105);
+            doc.text('Daily Breakdown', 14, yPos);
+            
+            // Prepare table data
+            const tableData = dailyData && dailyData.length > 0 
+                ? dailyData.map(day => [
+                    day.date,
+                    day.total_reservations,
+                    day.confirmed,
+                    day.pending,
+                    day.cancelled,
+                    `${day.occupancy_rate}%`
+                  ])
+                : [];
+            
+            // Add table using autoTable plugin
+            doc.autoTable({
+                startY: yPos + 6,
+                head: [['Date', 'Total', 'Confirmed', 'Pending', 'Cancelled', 'Occupancy']],
+                body: tableData.length > 0 ? tableData : [['No data available', '', '', '', '', '']],
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [151, 118, 105],
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [249, 249, 249]
+                }
+            });
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text(
+                    'Rwanda Eats Reserve - Restaurant Management System',
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                );
+                doc.text(
+                    `Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() - 20,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'right' }
+                );
+            }
+            
+            // Save the PDF
+            doc.save(`restaurant-report-${startDate}-to-${endDate}.pdf`);
+            
+            this.showNotification('PDF report downloaded successfully', 'success');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            this.showNotification('Error generating PDF. Please try CSV download instead.', 'error');
         }
     }
 
@@ -1189,19 +1484,181 @@ class RestaurantAdmin {
             `;
         }
 
-        // Update charts (simplified - in real implementation, use Chart.js or similar)
-        const statusSummary = reportData.statusSummary || {};
-        document.getElementById('status-chart').innerHTML = `
-            <div class="text-center">
-                <div class="text-2xl font-bold text-gray-600 mb-2">Status Distribution</div>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between"><span>Confirmed:</span> <span>${statusSummary.confirmed || 0}</span></div>
-                    <div class="flex justify-between"><span>Pending:</span> <span>${statusSummary.pending || 0}</span></div>
-                    <div class="flex justify-between"><span>Cancelled:</span> <span>${statusSummary.cancelled || 0}</span></div>
-                    <div class="flex justify-between"><span>Rejected:</span> <span>${statusSummary.rejected || 0}</span></div>
-                </div>
-            </div>
-        `;
+        // Update charts with Chart.js
+        this.renderStatusChart(reportData.statusSummary || {});
+        this.renderDailyChart(reportData.dailyData || []);
+    }
+
+    renderStatusChart(statusSummary) {
+        const ctx = document.getElementById('status-chart');
+        
+        // Destroy previous chart if exists
+        if (this.statusChart) {
+            this.statusChart.destroy();
+        }
+        
+        this.statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Confirmed', 'Pending', 'Cancelled', 'Rejected'],
+                datasets: [{
+                    data: [
+                        statusSummary.confirmed || 0,
+                        statusSummary.pending || 0,
+                        statusSummary.cancelled || 0,
+                        statusSummary.rejected || 0
+                    ],
+                    backgroundColor: [
+                        '#10b981', // green for confirmed
+                        '#f59e0b', // yellow for pending
+                        '#6b7280', // gray for cancelled
+                        '#ef4444'  // red for rejected
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 14
+                            },
+                            boxWidth: 20,
+                            boxHeight: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderDailyChart(dailyData) {
+        const ctx = document.getElementById('daily-chart');
+        
+        // Destroy previous chart if exists
+        if (this.dailyChart) {
+            this.dailyChart.destroy();
+        }
+        
+        // Prepare data
+        const dates = dailyData.map(day => this.formatDate(day.date));
+        const confirmed = dailyData.map(day => day.confirmed || 0);
+        const pending = dailyData.map(day => day.pending || 0);
+        const cancelled = dailyData.map(day => day.cancelled || 0);
+        
+        this.dailyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Confirmed',
+                        data: confirmed,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Pending',
+                        data: pending,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Cancelled',
+                        data: cancelled,
+                        borderColor: '#6b7280',
+                        backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 14
+                            },
+                            usePointStyle: true,
+                            boxWidth: 15,
+                            boxHeight: 15
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 12
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // Utility methods
@@ -1229,6 +1686,29 @@ class RestaurantAdmin {
     formatDate(dateString) {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    formatDateTime(dateTimeString) {
+        const date = new Date(dateTimeString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        };
+        return date.toLocaleDateString(undefined, options);
     }
 
     getStatusClass(status) {
@@ -1791,6 +2271,60 @@ class RestaurantAdmin {
         }
     }
 
+    openImageUploadModal() {
+        if (!this.currentRestaurantId) {
+            this.showNotification('Please select a restaurant first', 'error');
+            return;
+        }
+
+        // Create a file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        
+        input.onchange = async (e) => {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                await this.uploadImages(files);
+            }
+        };
+        
+        input.click();
+    }
+
+    async uploadImages(files) {
+        try {
+            const formData = new FormData();
+            
+            // Add all selected files to FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('images', files[i]);
+            }
+            
+            this.showNotification(`Uploading ${files.length} image(s)...`, 'info');
+            
+            const response = await fetch(`/api/restaurants/${this.currentRestaurantId}/images`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                this.showNotification(`${result.count} image(s) uploaded successfully`, 'success');
+                this.loadImages(this.currentRestaurantId);
+                this.loadRestaurantStats(this.currentRestaurantId);
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to upload images');
+            }
+        } catch (error) {
+            console.error('Error uploading images:', error);
+            this.showNotification(error.message || 'Error uploading images', 'error');
+        }
+    }
+
     async loadSettings(restaurantId) {
         try {
             const response = await fetch(`/api/restaurants/${restaurantId}/settings`);
@@ -1801,6 +2335,44 @@ class RestaurantAdmin {
             document.getElementById('setting-video-enabled').checked = settings.video_enabled !== false;
             document.getElementById('setting-gallery-enabled').checked = settings.gallery_enabled !== false;
 
+            // Display current files if they exist
+            const currentMenuPdf = document.getElementById('current-menu-pdf');
+            const currentCertificate = document.getElementById('current-certificate');
+            
+            if (settings.menu_pdf_url) {
+                const isImage = /\.(jpg|jpeg|png|gif)$/i.test(settings.menu_pdf_url);
+                if (isImage) {
+                    currentMenuPdf.innerHTML = `
+                        <div class="mt-2">
+                            <a href="${settings.menu_pdf_url}" target="_blank" class="text-brown-600 hover:text-brown-700">
+                                <i class="fas fa-image mr-1"></i>View current menu image
+                            </a>
+                            <img src="${settings.menu_pdf_url}" alt="Menu" class="mt-2 max-w-full h-32 object-contain border border-gray-200 rounded">
+                        </div>`;
+                } else {
+                    currentMenuPdf.innerHTML = `<a href="${settings.menu_pdf_url}" target="_blank" class="text-brown-600 hover:text-brown-700"><i class="fas fa-file-pdf mr-1"></i>View current menu PDF</a>`;
+                }
+            } else {
+                currentMenuPdf.innerHTML = '<span class="text-gray-400">No menu file uploaded</span>';
+            }
+            
+            if (settings.certificate_url) {
+                const isImage = /\.(jpg|jpeg|png|gif)$/i.test(settings.certificate_url);
+                if (isImage) {
+                    currentCertificate.innerHTML = `
+                        <div class="mt-2">
+                            <a href="${settings.certificate_url}" target="_blank" class="text-brown-600 hover:text-brown-700">
+                                <i class="fas fa-image mr-1"></i>View current certificate
+                            </a>
+                            <img src="${settings.certificate_url}" alt="Certificate" class="mt-2 max-w-full h-32 object-contain border border-gray-200 rounded">
+                        </div>`;
+                } else {
+                    currentCertificate.innerHTML = `<a href="${settings.certificate_url}" target="_blank" class="text-brown-600 hover:text-brown-700"><i class="fas fa-file mr-1"></i>View current certificate</a>`;
+                }
+            } else {
+                currentCertificate.innerHTML = '<span class="text-gray-400">No certificate uploaded</span>';
+            }
+
             document.getElementById('save-settings-btn').onclick = () => this.saveSettings(restaurantId);
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -1809,24 +2381,184 @@ class RestaurantAdmin {
 
     async saveSettings(restaurantId) {
         try {
-            const settings = {
-                rating_display: document.getElementById('setting-rating-display').checked,
-                reviews_enabled: document.getElementById('setting-reviews-enabled').checked,
-                video_enabled: document.getElementById('setting-video-enabled').checked,
-                gallery_enabled: document.getElementById('setting-gallery-enabled').checked
-            };
+            const formData = new FormData();
+            
+            // Add settings
+            formData.append('rating_display', document.getElementById('setting-rating-display').checked);
+            formData.append('reviews_enabled', document.getElementById('setting-reviews-enabled').checked);
+            formData.append('video_enabled', document.getElementById('setting-video-enabled').checked);
+            formData.append('gallery_enabled', document.getElementById('setting-gallery-enabled').checked);
+
+            // Add file uploads if present
+            const menuPdfFile = document.getElementById('setting-menu-pdf').files[0];
+            if (menuPdfFile) {
+                formData.append('menu_pdf', menuPdfFile);
+            }
+            
+            const certificateFile = document.getElementById('setting-certificate').files[0];
+            if (certificateFile) {
+                formData.append('certificate', certificateFile);
+            }
 
             await fetch(`/api/restaurants/${restaurantId}/settings`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: formData
             });
 
             this.showNotification('Settings saved successfully', 'success');
+            
+            // Clear file inputs
+            document.getElementById('setting-menu-pdf').value = '';
+            document.getElementById('setting-certificate').value = '';
+            
+            // Reload settings to show updated files
+            this.loadSettings(restaurantId);
         } catch (error) {
             console.error('Error saving settings:', error);
             this.showNotification('Error saving settings', 'error');
         }
+    }
+
+    // Notification Functions
+    setupNotifications() {
+        this.notificationsModal = document.getElementById('notifications-modal');
+        this.notificationBadgeDesktop = document.getElementById('notification-badge-desktop');
+        this.notificationBadgeMobile = document.getElementById('notification-badge-mobile');
+        
+        // Close modal when clicking outside
+        if (this.notificationsModal) {
+            this.notificationsModal.addEventListener('click', (e) => {
+                if (e.target === this.notificationsModal) {
+                    this.notificationsModal.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    async openNotifications() {
+        if (!this.currentUser) return;
+        
+        try {
+            const response = await fetch('/api/notifications');
+            const notifications = await response.json();
+            
+            this.displayNotifications(notifications);
+            this.notificationsModal.classList.remove('hidden');
+            
+            // Mark all as read
+            for (const notification of notifications) {
+                if (!notification.is_read) {
+                    await fetch(`/api/notifications/${notification.id}/read`, { method: 'PUT' });
+                }
+            }
+            
+            this.updateNotificationBadge(0);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            this.showNotification('Error loading notifications', 'error');
+        }
+    }
+
+    displayNotifications(notifications) {
+        const container = document.getElementById('notifications-container');
+        
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-bell-slash text-5xl text-gray-300 mb-4"></i>
+                    <h3 class="text-xl text-gray-500">No notifications</h3>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = notifications.map(notification => {
+            const isUnread = !notification.is_read;
+            const isReservation = notification.type === 'new_reservation';
+            const borderColor = isUnread ? 'border-brown-600' : 'border-brown-300';
+            const bgColor = isReservation ? 'bg-yellow-50' : 'bg-brown-50';
+            
+            return `
+                <div class="border-l-4 ${borderColor} p-4 mb-4 ${bgColor}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-900">
+                                ${isReservation ? '<i class="fas fa-calendar-check text-yellow-600 mr-2"></i>' : ''}
+                                ${notification.title}
+                                ${isUnread ? '<span class="ml-2 text-xs bg-brown-600 text-white px-2 py-1 rounded">NEW</span>' : ''}
+                            </h4>
+                            <p class="text-gray-600 mt-1">${notification.message}</p>
+                            <div class="text-xs text-gray-400 mt-2">
+                                <i class="far fa-clock mr-1"></i>${this.formatDateTime(notification.created_at)}
+                            </div>
+                        </div>
+                        ${notification.related_reservation_id && isUnread ? `
+                            <button onclick="restaurantAdmin.viewReservationFromNotification(${notification.related_reservation_id})" 
+                                    class="ml-4 bg-brown-600 text-white px-3 py-1 rounded text-sm hover:bg-brown-700 transition">
+                                View
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async updateNotificationBadge(count = null) {
+        if (count === null) {
+            try {
+                const response = await fetch('/api/notifications');
+                const notifications = await response.json();
+                count = notifications.filter(n => !n.is_read).length;
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+                return;
+            }
+        }
+        
+        // Update desktop badge
+        if (this.notificationBadgeDesktop) {
+            if (count > 0) {
+                this.notificationBadgeDesktop.textContent = count > 99 ? '99+' : count;
+                this.notificationBadgeDesktop.classList.remove('hidden');
+            } else {
+                this.notificationBadgeDesktop.classList.add('hidden');
+            }
+        }
+        
+        // Update mobile badge
+        if (this.notificationBadgeMobile) {
+            if (count > 0) {
+                this.notificationBadgeMobile.textContent = count > 99 ? '99+' : count;
+                this.notificationBadgeMobile.classList.remove('hidden');
+            } else {
+                this.notificationBadgeMobile.classList.add('hidden');
+            }
+        }
+    }
+
+    async viewReservationFromNotification(reservationId) {
+        // Close notifications modal
+        this.notificationsModal.classList.add('hidden');
+        
+        // Switch to reservations tab
+        this.switchTab('reservations');
+        
+        // Wait a moment for the tab to load
+        setTimeout(() => {
+            // Find and highlight the reservation
+            const reservationRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+            if (reservationRow) {
+                reservationRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                reservationRow.classList.add('bg-yellow-100');
+                setTimeout(() => {
+                    reservationRow.classList.remove('bg-yellow-100');
+                }, 2000);
+            }
+            
+            // Or open the reservation details
+            this.viewReservationDetails(reservationId);
+        }, 300);
     }
 }
 

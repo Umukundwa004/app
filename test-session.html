@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Test</title>
+</head>
+<body>
+    <h1>Session Status Check</h1>
+    <button onclick="checkSession()">Check Session</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/user', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // Auto-check on load
+        window.onload = checkSession;
+    </script>
+</body>
+</html>

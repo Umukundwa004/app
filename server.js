@@ -114,6 +114,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/views', express.static('views')); // Serve views folder for images
+
+// Serve PWA files
+app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+app.get('/service-worker.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'public', 'service-worker.js'));
+});
+
 app.use(session({
     secret: 'rwanda-eats-reserve-session-secret',
     resave: false,
@@ -138,6 +150,12 @@ const db = mysql.createPool({
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 const hashPassword = async (password) => await bcrypt.hash(password, BCRYPT_ROUNDS);
 const verifyPassword = async (password, hash) => await bcrypt.compare(password, hash);
+
+// Email validation function
+const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
 
 // Authentication Middleware
 const authenticateToken = async (req, res, next) => {
@@ -171,16 +189,24 @@ const requireAuth = (req, res, next) => {
 };
 
 const requireSystemAdmin = (req, res, next) => {
+    console.log('requireSystemAdmin - Session:', req.session);
+    console.log('requireSystemAdmin - User:', req.session.user);
     if (!req.session.user || req.session.user.user_type !== 'system_admin') {
+        console.log('requireSystemAdmin - Access denied. User type:', req.session.user?.user_type);
         return res.status(403).json({ error: 'System admin access required' });
     }
+    console.log('requireSystemAdmin - Access granted for user:', req.session.user.email);
     next();
 };
 
 const requireRestaurantAdmin = (req, res, next) => {
+    console.log('requireRestaurantAdmin - Session:', req.session);
+    console.log('requireRestaurantAdmin - User:', req.session.user);
     if (!req.session.user || req.session.user.user_type !== 'restaurant_admin') {
+        console.log('requireRestaurantAdmin - Access denied. User type:', req.session.user?.user_type);
         return res.status(403).json({ error: 'Restaurant admin access required' });
     }
+    console.log('requireRestaurantAdmin - Access granted for user:', req.session.user.email);
     next();
 };
 
@@ -664,6 +690,11 @@ app.post('/api/auth/register', async (req, res) => {
         // Validate input
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
+        }
+
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
         }
 
         // Check if user already exists
@@ -1617,6 +1648,9 @@ app.get('/api/user/reservations', isAuthenticated, async (req, res) => {
             whereClause += ` AND r.status IN ('cancelled', 'rejected')`;
         }
         
+        // Limit to last 3 months for customers
+        whereClause += ` AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)`;
+        
         const [reservations] = await db.execute(`
             SELECT 
                 r.*,
@@ -2211,7 +2245,7 @@ app.delete('/api/amenities/:id', requireAuth, async (req, res) => {
 // ===== RESTAURANT SETTINGS API =====
 
 // Update restaurant display settings
-app.patch('/api/restaurants/:id/settings', requireAuth, async (req, res) => {
+app.patch('/api/restaurants/:id/settings', requireAuth, upload.fields([{ name: 'menu_pdf', maxCount: 1 }, { name: 'certificate', maxCount: 1 }]), async (req, res) => {
     try {
         const user = req.session.user;
         const restaurantId = req.params.id;
@@ -2236,19 +2270,33 @@ app.patch('/api/restaurants/:id/settings', requireAuth, async (req, res) => {
         
         if (rating_display !== undefined) {
             updates.push('rating_display = ?');
-            values.push(rating_display);
+            values.push(rating_display === 'true' || rating_display === true);
         }
         if (reviews_enabled !== undefined) {
             updates.push('reviews_enabled = ?');
-            values.push(reviews_enabled);
+            values.push(reviews_enabled === 'true' || reviews_enabled === true);
         }
         if (video_enabled !== undefined) {
             updates.push('video_enabled = ?');
-            values.push(video_enabled);
+            values.push(video_enabled === 'true' || video_enabled === true);
         }
         if (gallery_enabled !== undefined) {
             updates.push('gallery_enabled = ?');
-            values.push(gallery_enabled);
+            values.push(gallery_enabled === 'true' || gallery_enabled === true);
+        }
+        
+        // Handle file uploads
+        if (req.files) {
+            if (req.files.menu_pdf && req.files.menu_pdf[0]) {
+                const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+                updates.push('menu_pdf_url = ?');
+                values.push(menu_pdf_url);
+            }
+            if (req.files.certificate && req.files.certificate[0]) {
+                const certificate_url = '/uploads/restaurants/' + req.files.certificate[0].filename;
+                updates.push('certificate_url = ?');
+                values.push(certificate_url);
+            }
         }
         
         if (updates.length === 0) {
@@ -2273,7 +2321,7 @@ app.patch('/api/restaurants/:id/settings', requireAuth, async (req, res) => {
 app.get('/api/restaurants/:id/settings', async (req, res) => {
     try {
         const [restaurants] = await db.execute(
-            'SELECT rating_display, reviews_enabled, video_enabled, gallery_enabled FROM restaurants WHERE id = ?',
+            'SELECT rating_display, reviews_enabled, video_enabled, gallery_enabled, menu_pdf_url, certificate_url FROM restaurants WHERE id = ?',
             [req.params.id]
         );
         
@@ -2448,6 +2496,11 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
 
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
         // Check if user already exists
         const [existingUsers] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existingUsers.length > 0) {
@@ -2532,6 +2585,7 @@ app.get('/api/restaurant-admin/dashboard-stats', requireRestaurantAdmin, async (
                 SELECT COUNT(*) as count FROM reservations r 
                 JOIN restaurants rest ON r.restaurant_id = rest.id 
                 WHERE rest.restaurant_admin_id = ? AND r.status = 'pending'
+                AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
             `,
             confirmedToday: `
                 SELECT COUNT(*) as count FROM reservations r 
@@ -2550,6 +2604,7 @@ app.get('/api/restaurant-admin/dashboard-stats', requireRestaurantAdmin, async (
                 FROM reservations r 
                 JOIN restaurants rest ON r.restaurant_id = rest.id 
                 WHERE rest.restaurant_admin_id = ?
+                AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
             `
         };
 
@@ -2588,6 +2643,7 @@ app.get('/api/restaurant-admin/reservations', requireRestaurantAdmin, async (req
             JOIN users u ON r.customer_id = u.id
             JOIN restaurants rest ON r.restaurant_id = rest.id
             WHERE rest.restaurant_admin_id = ?
+            AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
         `;
         const params = [userId];
         
@@ -2635,23 +2691,28 @@ app.get('/api/restaurant-admin/restaurants', requireRestaurantAdmin, async (req,
     }
 });
 
-app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }]), async (req, res) => {
+app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }, { name: 'menu_pdf', maxCount: 1 }]), async (req, res) => {
     try {
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count } = req.body;
         
         let video_url = null;
+        let menu_pdf_url = null;
         
         if (req.files && req.files.video && req.files.video[0]) {
             video_url = '/uploads/restaurants/' + req.files.video[0].filename;
         }
         
+        if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
+            menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+        }
+        
         // Insert restaurant (without image_url for now, will use primary from restaurant_images)
         const [result] = await db.execute(
             `INSERT INTO restaurants (name, description, location, contact_phone, contact_email, 
-             opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, video_url) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, video_url, menu_pdf_url) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [name, description, location, contact_phone, contact_email, opening_time, closing_time, 
-             cuisine_type, price_range, tables_count, req.session.user.id, video_url]
+             cuisine_type, price_range, tables_count, req.session.user.id, video_url, menu_pdf_url]
         );
         
         const restaurantId = result.insertId;
@@ -2685,7 +2746,7 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
     }
 });
 
-app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }]), async (req, res) => {
+app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: 'images', maxCount: 10 }, { name: 'video', maxCount: 1 }, { name: 'menu_pdf', maxCount: 1 }]), async (req, res) => {
     try {
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count } = req.body;
         
@@ -2710,6 +2771,13 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
             const video_url = '/uploads/restaurants/' + req.files.video[0].filename;
             updateQuery += ', video_url = ?';
             updateParams.push(video_url);
+        }
+        
+        // Handle menu PDF/image upload
+        if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
+            const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+            updateQuery += ', menu_pdf_url = ?';
+            updateParams.push(menu_pdf_url);
         }
         
         updateQuery += ' WHERE id = ?';
@@ -2770,7 +2838,7 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
 app.get('/api/restaurants/:id/images', async (req, res) => {
     try {
         const [images] = await db.execute(
-            'SELECT * FROM restaurant_images WHERE restaurant_id = ? ORDER BY display_order',
+            'SELECT * FROM restaurant_images WHERE restaurant_id = ? AND is_visible = TRUE ORDER BY display_order',
             [req.params.id]
         );
         res.json(images);
@@ -2778,6 +2846,53 @@ app.get('/api/restaurants/:id/images', async (req, res) => {
         console.error('Error loading restaurant images:', error && error.stack ? error.stack : error);
         // Return empty array so clients expecting an array don't break the UI
         res.json([]);
+    }
+});
+
+// Upload new images to a restaurant
+app.post('/api/restaurants/:id/images', requireRestaurantAdmin, upload.array('images', 10), async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Verify ownership
+        const [ownership] = await db.execute(
+            'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
+            [id, req.session.user.id]
+        );
+        
+        if (ownership.length === 0) {
+            return res.status(403).json({ error: 'Permission denied - You do not own this restaurant' });
+        }
+        
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No images uploaded' });
+        }
+        
+        // Get the current max display order
+        const [maxOrderResult] = await db.execute(
+            'SELECT COALESCE(MAX(display_order), -1) as max_order FROM restaurant_images WHERE restaurant_id = ?',
+            [id]
+        );
+        let displayOrder = (maxOrderResult[0]?.max_order || -1) + 1;
+        
+        // Insert all uploaded images
+        const insertPromises = req.files.map(file => {
+            const imageUrl = `/uploads/restaurants/${file.filename}`;
+            return db.execute(
+                'INSERT INTO restaurant_images (restaurant_id, image_url, is_visible, display_order) VALUES (?, ?, ?, ?)',
+                [id, imageUrl, true, displayOrder++]
+            );
+        });
+        
+        await Promise.all(insertPromises);
+        
+        res.json({ 
+            message: 'Images uploaded successfully', 
+            count: req.files.length 
+        });
+    } catch (error) {
+        console.error('Error uploading restaurant images:', error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -2916,33 +3031,46 @@ app.get('/api/menu-items', async (req, res) => {
         res.json(menuItems);
     } catch (error) {
         console.error('Error loading menu items:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error details:', error.message, error.stack);
+        res.status(500).json({ error: 'Internal server error', message: error.message });
     }
 });
 
 app.post('/api/menu-items', requireRestaurantAdmin, async (req, res) => {
     try {
         const { name, description, price, category, cuisine, restaurant_id } = req.body;
+        console.log('Creating menu item - Full request body:', req.body);
+        console.log('Creating menu item:', { name, restaurant_id, user: req.session.user.id });
+        
+        // Validate required fields
+        if (!name || !price || !restaurant_id) {
+            console.error('Missing required fields:', { name: !!name, price: !!price, restaurant_id: !!restaurant_id });
+            return res.status(400).json({ error: 'Missing required fields: name, price, and restaurant_id are required' });
+        }
         
         // Verify ownership
         const [ownership] = await db.execute(
             'SELECT * FROM restaurants WHERE id = ? AND restaurant_admin_id = ?',
             [restaurant_id, req.session.user.id]
         );
+        console.log('Ownership check result:', ownership.length > 0 ? 'Authorized' : 'Not authorized');
         
         if (ownership.length === 0) {
-            return res.status(403).json({ error: 'Permission denied' });
+            return res.status(403).json({ error: 'Permission denied - You do not own this restaurant' });
         }
         
         const [result] = await db.execute(
             'INSERT INTO menu_items (name, description, price, category, cuisine, restaurant_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, description, price, category, cuisine, restaurant_id]
+            [name, description || '', price, category || '', cuisine || '', restaurant_id]
         );
         
+        console.log('Menu item created successfully with ID:', result.insertId);
         res.json({ message: 'Menu item created successfully', id: result.insertId });
     } catch (error) {
         console.error('Error creating menu item:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        console.error('Error message:', error.message);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -3049,6 +3177,9 @@ app.get('/api/restaurant-admin/reports', requireRestaurantAdmin, async (req, res
         if (start_date && end_date) {
             whereClause += ' AND r.reservation_date BETWEEN ? AND ?';
             params.push(start_date, end_date);
+        } else {
+            // Default to last 3 months if no date range specified
+            whereClause += ' AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)';
         }
         
         // Get status summary
@@ -3200,13 +3331,23 @@ app.post('/api/system-admin/users', requireSystemAdmin, async (req, res) => {
     try {
         const { name, email, phone, user_type, password } = req.body;
         
+        // Password is required when creating a new user
+        if (!password) {
+            return res.status(400).json({ error: 'Password is required when creating a new user' });
+        }
+        
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+        
         // Check if user already exists
         const [existingUsers] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existingUsers.length > 0) {
             return res.status(400).json({ error: 'User with this email already exists' });
         }
         
-        const passwordHash = await hashPassword(password || 'default123');
+        const passwordHash = await hashPassword(password);
         
         const [result] = await db.execute(
             'INSERT INTO users (name, email, phone, user_type, password_hash, email_verified) VALUES (?, ?, ?, ?, ?, TRUE)',
@@ -3216,6 +3357,25 @@ app.post('/api/system-admin/users', requireSystemAdmin, async (req, res) => {
         res.json({ message: 'User created successfully', id: result.insertId });
     } catch (error) {
         console.error('Error creating user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get single user by ID
+app.get('/api/system-admin/users/:id', requireSystemAdmin, async (req, res) => {
+    try {
+        const [users] = await db.execute(
+            'SELECT id, name, email, phone, user_type, email_verified, account_locked, created_at FROM users WHERE id = ?',
+            [req.params.id]
+        );
+        
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json(users[0]);
+    } catch (error) {
+        console.error('Error fetching user:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -3306,7 +3466,9 @@ app.get('/api/system-admin/restaurants', requireSystemAdmin, async (req, res) =>
         res.json(restaurants);
     } catch (error) {
         console.error('Error loading restaurants:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -3335,6 +3497,8 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
         // Accept frontend field names (location, contact_phone, contact_email, cuisine_type, price_range, tables_count)
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, operating_hours, menu, create_new_admin, admin_name, admin_email, admin_login_email, admin_phone, admin_password } = req.body;
         
+        console.log('Creating restaurant with data:', { name, admin_email, admin_name, create_new_admin });
+        
         let adminId;
         
         // This logic assumes if an admin email is provided, we're creating a new admin.
@@ -3342,6 +3506,12 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
             if (!admin_email || !admin_password) {
                 await connection.rollback();
                 return res.status(400).json({ error: 'Admin email and password are required for new admin creation' });
+            }
+            
+            // Validate email format
+            if (!isValidEmail(admin_email)) {
+                await connection.rollback();
+                return res.status(400).json({ error: 'Invalid admin email format' });
             }
             
             // Check if email already exists
@@ -3354,9 +3524,8 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
             // Create the restaurant admin user
             const passwordHash = await hashPassword(admin_password);
             const [adminResult] = await connection.execute(
-                'INSERT INTO users (name, email, password_hash, user_type, email_verified) VALUES (?, ?, ?, ?, ?)',
-                // Use email as name if name is not provided
-                [admin_email, admin_email, passwordHash, 'restaurant_admin', true]
+                'INSERT INTO users (name, email, password_hash, phone, user_type, email_verified) VALUES (?, ?, ?, ?, ?, ?)',
+                [admin_name || admin_email, admin_email, passwordHash, admin_phone || null, 'restaurant_admin', true]
             );
             
             adminId = adminResult.insertId;
@@ -3378,9 +3547,9 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
         
         // Insert restaurant (include new fields if available)
         const [result] = await connection.execute(
-            `INSERT INTO restaurants (name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, operating_hours, menu, menu_pdf, restaurant_admin_id, video_url) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, description || null, location || null, contact_phone || null, contact_email || null, opening_time || null, closing_time || null, cuisine_type || null, price_range || '2', tables_count || 10, operating_hours ? JSON.stringify(operating_hours) : null, menu || null, menu_pdf_url || null, adminId || null, video_url || null]
+            `INSERT INTO restaurants (name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, menu, menu_pdf_url, restaurant_admin_id, video_url) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, description || null, location || null, contact_phone || null, contact_email || null, opening_time || null, closing_time || null, cuisine_type || null, price_range || '2', tables_count || 10, menu || null, menu_pdf_url || null, adminId || null, video_url || null]
         );
         
         const restaurantId = result.insertId;
@@ -3424,7 +3593,9 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('Error creating restaurant:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error stack:', error.stack);
+        console.error('Error message:', error.message);
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     } finally {
         if (connection) connection.release();
     }
