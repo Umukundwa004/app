@@ -133,17 +133,30 @@ app.use(session({
     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
 }));
 
-// Database connection pool
-// IMPORTANT: Update the password to match your MySQL root password
-// Common defaults: '' (empty), 'root', 'password', or your custom password
+// Database connection pool (adjusted for serverless compatibility)
+// NOTE: On Vercel you CANNOT connect to a local 127.0.0.1 database.
+// Use a remote MySQL provider (PlanetScale, AWS RDS, DigitalOcean, etc.) and set all DB_* env vars.
+// Added optional SSL and explicit port + removed hard-coded password fallback for production safety.
 const db = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'vestine004', // ← set DB_PASSWORD env var or update this default
+    password: process.env.DB_PASSWORD || 'vestine004',
     database: process.env.DB_NAME || 'rwanda_eats_reserve',
     waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONN_LIMIT, 10) || 10,
-    queueLimit: 0
+    connectionLimit: parseInt(process.env.DB_CONN_LIMIT || '10', 10),
+    queueLimit: 0,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+});
+
+let DB_READY = false;
+
+// Middleware to short-circuit API calls if DB not ready
+app.use((req, res, next) => {
+    if (!DB_READY && req.path.startsWith('/api')) {
+        return res.status(503).json({ error: 'Database not available. Please try again shortly.' });
+    }
+    next();
 });
 
 // Utility Functions
@@ -2504,16 +2517,16 @@ END RESTAURANT DETAILS MANAGEMENT API
 // Startup routine: verify DB connection and email transporter, then start listening
 (async function startServer() {
     try {
-        // Test DB connection
         await db.execute('SELECT 1');
+        DB_READY = true;
         console.log('Database connection OK');
     } catch (err) {
-        console.error('Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
-        console.error(err);
-        process.exit(1);
+        console.error('Failed to connect to the database. Check remote DB host, credentials, and networking.');
+        console.error('DB connection error code:', err.code);
+        // Do NOT exit in serverless; allow health endpoints / static assets to serve.
+        DB_READY = false;
     }
 
-    // Verify and test email services
     try {
         const emailResults = await EmailService.testConfiguration();
         console.log('📧 Email Service Status:');
@@ -2521,7 +2534,12 @@ END RESTAURANT DETAILS MANAGEMENT API
         console.log(`   MailerSend: ${emailResults.mailersend.configured ? (emailResults.mailersend.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
     } catch (error) {
         console.error('⚠️ Email service test failed:', error.message);
-        console.warn('📧 Email functionality may be limited');
+    }
+
+    // If running on Vercel, avoid calling listen (serverless runtime handles requests)
+    if (process.env.VERCEL) {
+        console.log('Detected Vercel environment. Skipping app.listen; exporting app for serverless usage.');
+        return;
     }
 
     app.listen(PORT, () => {
@@ -3812,7 +3830,26 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
         }
         
         await AuditLogService.logAction(req.session.user.id, 'RESTAURANT_UPDATED', 'restaurant', req.params.id, { name }, req, connection);
-        
+
+        // Notify the assigned restaurant admin (if any) that details were updated by system admin
+        try {
+            const [restRows] = await connection.execute('SELECT restaurant_admin_id, name FROM restaurants WHERE id = ?', [req.params.id]);
+            const adminId = restRows && restRows[0] ? restRows[0].restaurant_admin_id : null;
+            const restName = restRows && restRows[0] ? restRows[0].name : 'Restaurant';
+            if (adminId) {
+                await NotificationService.createNotification(
+                    adminId,
+                    'Restaurant Details Updated',
+                    `${restName} details were updated by a system administrator. Please review to ensure accuracy.`,
+                    'restaurant_update',
+                    'in_app',
+                    null
+                );
+            }
+        } catch (notifyErr) {
+            console.warn('Notify restaurant admin failed:', notifyErr && notifyErr.message ? notifyErr.message : notifyErr);
+        }
+
         await connection.commit();
         res.json({ message: 'Restaurant updated successfully' });
     } catch (error) {
