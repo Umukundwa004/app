@@ -4,11 +4,17 @@ module.exports = {
     db: {
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || 'vestine004', // Change this to your MySQL root password
-        database: 'rwanda_eats_reserve',
+        password: process.env.DB_PASSWORD || 'vestine004',
+        database: process.env.DB_NAME || 'rwanda_eats_reserve', // Added env var for flexibility
+        port: process.env.DB_PORT || 3306, // Added Port (TiDB uses 4000)
         waitForConnections: true,
         connectionLimit: 10,
-        queueLimit: 0
+        queueLimit: 0,
+        // 👇 REQUIRED FOR TIDB CLOUD 👇
+        ssl: {
+            minVersion: 'TLSv1.2',
+            rejectUnauthorized: true
+        }
     },
 
     // Server Configuration

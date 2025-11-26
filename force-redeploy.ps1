@@ -76,3 +76,5 @@ Write-Host "2. Add environment variables to Vercel" -ForegroundColor White
 Write-Host "3. The new logs will help confirm what's happening" -ForegroundColor White
 
 Read-Host "Press Enter to continue"
+
+Error at startServer (/var/task/backend/server.js:2508:18)
