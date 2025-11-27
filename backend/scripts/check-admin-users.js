@@ -1,13 +1,8 @@
 // check-admin-users.js
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function checkUsers() {
-    const db = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: 'vestine004',
-        database: 'rwanda_eats_reserve'
-    });
+    const db = await createConnection();
 
     console.log('Checking admin users in database...\n');
 

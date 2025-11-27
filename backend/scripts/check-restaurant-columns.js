@@ -1,12 +1,7 @@
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function checkColumns() {
-    const connection = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: 'vestine004',
-        database: 'rwanda_eats_reserve'
-    });
+    const connection = await createConnection();
 
     try {
         const [columns] = await connection.execute(`

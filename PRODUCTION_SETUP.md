@@ -90,7 +90,7 @@ For local development, keep using your local MySQL. Create a `.env` file:
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=vestine004
+DB_PASSWORD=<YOUR_LOCAL_PASSWORD>
 DB_NAME=rwanda_eats_reserve
 DB_SSL=false
 

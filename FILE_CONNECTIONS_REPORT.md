@@ -190,7 +190,7 @@ Delivery-app/
 The server checks for these environment variables:
 - `DB_HOST` (default: localhost)
 - `DB_USER` (default: root)
-- `DB_PASSWORD` (default: vestine004)
+- `DB_PASSWORD` (set via environment variable)
 - `DB_NAME` (default: rwanda_eats_reserve)
 - `PORT` (default: 9000)
 - `JWT_SECRET`

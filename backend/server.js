@@ -177,7 +177,7 @@ app.get('/service-worker.js', (req, res) => {
 //     host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
 //     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
 //     user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
-//     password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
+//     password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : ''),
 //     database: process.env.DB_NAME || 'rwanda_eats_reserve',
 //     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 //     clearExpired: true,
@@ -226,17 +226,41 @@ if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
     }
 }
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
-    password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
-    database: process.env.DB_NAME || 'rwanda_eats_reserve',
-    waitForConnections: true,
-    connectionLimit: parseInt(process.env.DB_CONN_LIMIT || '10', 10),
-    queueLimit: 0,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
-});
+// Prefer a single DATABASE_URL for TiDB/MySQL providers. Fallback to discrete vars.
+const isTiDBEnv = (
+    (process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com')) ||
+    (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('tidbcloud.com')) ||
+    process.env.DB_PORT === '4000'
+);
+
+const sslConfig = (process.env.DB_SSL === 'true' || isTiDBEnv)
+    ? { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+    : undefined;
+
+let db;
+if (process.env.DATABASE_URL) {
+    // mysql2 supports connection URI string; pass pool options + SSL for TiDB
+    db = mysql.createPool(process.env.DATABASE_URL, {
+        waitForConnections: true,
+        connectionLimit: parseInt(process.env.DB_CONN_LIMIT || '10', 10),
+        queueLimit: 0,
+        ssl: sslConfig
+    });
+} else {
+    db = mysql.createPool({
+        host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
+        port: process.env.DB_PORT
+            ? parseInt(process.env.DB_PORT, 10)
+            : (isTiDBEnv ? 4000 : 3306),
+        user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
+        password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : ''),
+        database: process.env.DB_NAME || 'rwanda_eats_reserve',
+        waitForConnections: true,
+        connectionLimit: parseInt(process.env.DB_CONN_LIMIT || '10', 10),
+        queueLimit: 0,
+        ssl: sslConfig
+    });
+}
 
 let DB_READY = false;
 

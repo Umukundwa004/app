@@ -1,13 +1,8 @@
 // test-check-users.js - Check what users exist
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function checkUsers() {
-    const db = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: 'vestine004',
-        database: 'rwanda_eats_reserve'
-    });
+    const db = await createConnection();
 
     try {
         const [users] = await db.execute(

@@ -1,17 +1,12 @@
 // test-admin-login.js - Test admin login credentials
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 const bcrypt = require('bcryptjs');
 
 async function testLogin() {
     let connection;
     
     try {
-        connection = await mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: 'vestine004',
-            database: 'rwanda_eats_reserve'
-        });
+        connection = await createConnection();
 
         console.log('✅ Connected to database\n');
 

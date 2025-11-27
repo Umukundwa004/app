@@ -1,19 +1,12 @@
 // run-migration-details.js - Run restaurant details migration
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 const fs = require('fs');
 
 async function runMigration() {
     let connection;
     
     try {
-        // Connect to database - use password from .env
-        connection = await mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: 'vestine004',
-            database: 'rwanda_eats_reserve',
-            multipleStatements: true
-        });
+        connection = await createConnection();
         console.log('✅ Connected to database');
         
         // Read migration file

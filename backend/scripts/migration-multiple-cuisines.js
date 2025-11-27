@@ -1,12 +1,7 @@
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function addMultipleCuisineSupport() {
-    const conn = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: 'vestine004',
-        database: 'rwanda_eats_reserve'
-    });
+    const conn = await createConnection();
 
     console.log('✅ Connected to database\n');
 

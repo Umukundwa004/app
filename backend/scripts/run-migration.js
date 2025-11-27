@@ -1,15 +1,14 @@
 // run-migration.js
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 const fs = require('fs');
 const path = require('path');
-const config = require('./config');
 
 async function runMigration() {
     let connection;
     
     try {
         // Create connection
-        connection = await mysql.createConnection(config.db);
+        connection = await createConnection();
         console.log('Connected to database');
         
         // Read migration file

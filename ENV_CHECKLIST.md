@@ -3,12 +3,15 @@
 ## 🚨 CRITICAL: Set These in Vercel Dashboard
 
 ### Required Database Variables
-- [ ] `DB_HOST` - Your cloud database host (NOT localhost)
-- [ ] `DB_PORT` - Usually 3306 for MySQL
-- [ ] `DB_USER` - Database username
-- [ ] `DB_PASSWORD` - Database password  
-- [ ] `DB_NAME` - Database name (rwanda_eats_reserve)
-- [ ] `DB_SSL` - Set to "true" for cloud databases
+- [ ] EITHER set a single `DATABASE_URL` (preferred for TiDB/managed MySQL)
+   - Example: `mysql://username:password@host.tidbcloud.com:4000/rwanda_eats_reserve`
+- [ ] OR set discrete vars:
+   - `DB_HOST` - Your cloud database host (NOT localhost)
+   - `DB_PORT` - 4000 for TiDB Cloud, 3306 for MySQL
+   - `DB_USER` - Database username
+   - `DB_PASSWORD` - Database password  
+   - `DB_NAME` - Database name (rwanda_eats_reserve)
+   - `DB_SSL` - Set to "true" for cloud databases
 
 ### Required Security Variables
 - [ ] `JWT_SECRET` - Random secure string for JWT tokens
@@ -55,6 +58,24 @@ SESSION_SECRET=your-super-secret-session-key-here
 ```
 
 ### For Railway:
+### For TiDB Cloud:
+```
+# Option A: Single connection URL (recommended)
+DATABASE_URL=mysql://<username>:<password>@<cluster-host>.tidbcloud.com:4000/rwanda_eats_reserve
+
+# Option B: Discrete variables
+DB_HOST=<cluster-host>.tidbcloud.com
+DB_PORT=4000
+DB_USER=<username>
+DB_PASSWORD=<password>
+DB_NAME=rwanda_eats_reserve
+DB_SSL=true
+
+NODE_ENV=production
+JWT_SECRET=your-super-secret-jwt-key-here
+SESSION_SECRET=your-super-secret-session-key-here
+```
+
 ```
 DB_HOST=containers-us-west-xyz.railway.app
 DB_PORT=6543

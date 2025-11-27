@@ -4,7 +4,7 @@ module.exports = {
     db: {
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || 'vestine004',
+        password: process.env.DB_PASSWORD || '',
         database: process.env.DB_NAME || 'rwanda_eats_reserve', // Added env var for flexibility
         port: process.env.DB_PORT || 3306, // Added Port (TiDB uses 4000)
         waitForConnections: true,

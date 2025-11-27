@@ -1,15 +1,10 @@
 // verify-settings-columns.js
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function verify() {
     let connection;
     try {
-        connection = await mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: 'vestine004',
-            database: 'rwanda_eats_reserve'
-        });
+        connection = await createConnection();
         
         const [cols] = await connection.query('DESCRIBE restaurants');
         console.log('\n📋 Restaurants table columns:');

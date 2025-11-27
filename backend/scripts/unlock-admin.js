@@ -1,16 +1,11 @@
 // unlock-admin.js - Unlock admin account
-const mysql = require('mysql2/promise');
+const { createConnection } = require('../utils/db');
 
 async function unlockAdmin() {
     let connection;
     
     try {
-        connection = await mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: 'vestine004',
-            database: 'rwanda_eats_reserve'
-        });
+        connection = await createConnection();
 
         console.log('Connected to database');
 
