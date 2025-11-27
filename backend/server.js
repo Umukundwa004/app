@@ -74,6 +74,40 @@ const storage = new CloudinaryStorage({
 // Fallback to memory storage if Cloudinary not configured (development only)
 const fallbackStorage = multer.memoryStorage();
 
+// Helper function to delete files from Cloudinary
+const deleteFromCloudinary = async (fileUrl) => {
+    if (!fileUrl || !process.env.CLOUDINARY_CLOUD_NAME) {
+        return; // Skip if no URL or Cloudinary not configured
+    }
+    
+    try {
+        // Extract public_id from Cloudinary URL
+        // URL format: https://res.cloudinary.com/{cloud_name}/{resource_type}/upload/v{version}/{public_id}.{format}
+        const urlParts = fileUrl.split('/');
+        const uploadIndex = urlParts.indexOf('upload');
+        if (uploadIndex === -1) return;
+        
+        // Get everything after 'upload/v{version}/'
+        const publicIdWithExt = urlParts.slice(uploadIndex + 2).join('/');
+        const publicId = publicIdWithExt.split('.')[0]; // Remove file extension
+        
+        // Determine resource type from URL
+        let resourceType = 'image';
+        if (fileUrl.includes('/video/upload/')) {
+            resourceType = 'video';
+        } else if (fileUrl.includes('/raw/upload/')) {
+            resourceType = 'raw';
+        }
+        
+        // Delete from Cloudinary
+        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+        console.log(`✅ Deleted from Cloudinary: ${publicId} (${resourceType})`);
+    } catch (error) {
+        console.error('Error deleting from Cloudinary:', error.message);
+        // Don't throw - allow deletion to proceed even if Cloudinary deletion fails
+    }
+};
+
 const fileFilter = (req, file, cb) => {
     if (file.fieldname === 'image' || file.fieldname === 'images') {
         if (file.mimetype.startsWith('image/')) {
@@ -3180,8 +3214,12 @@ app.delete('/api/restaurants/:restaurantId/images/:imageId', requireRestaurantAd
         }
         
         const wasPrimary = image[0].is_primary;
+        const imageUrl = image[0].image_url;
         
-        // Delete the image
+        // Delete from Cloudinary first
+        await deleteFromCloudinary(imageUrl);
+        
+        // Delete the image from database
         await db.execute(
             'DELETE FROM restaurant_images WHERE id = ?',
             [imageId]
@@ -3370,6 +3408,12 @@ app.delete('/api/menu-items/:id', requireRestaurantAdmin, async (req, res) => {
         
         if (ownership.length === 0) {
             return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Get menu item to delete associated image
+        const menuItem = ownership[0];
+        if (menuItem.image_url) {
+            await deleteFromCloudinary(menuItem.image_url);
         }
         
         await db.execute('DELETE FROM menu_items WHERE id = ?', [req.params.id]);
@@ -4049,8 +4093,12 @@ app.delete('/api/system-admin/restaurants/:id', requireSystemAdmin, async (req, 
         const restaurant = restaurants[0];
         const adminId = restaurant.restaurant_admin_id;
 
-        // Delete related images (some deployments may not have this table)
+        // Delete related images from Cloudinary and database
         try {
+            const [images] = await db.execute('SELECT image_url FROM restaurant_images WHERE restaurant_id = ?', [restaurantId]);
+            for (const img of images) {
+                await deleteFromCloudinary(img.image_url);
+            }
             await db.execute('DELETE FROM restaurant_images WHERE restaurant_id = ?', [restaurantId]);
         } catch (err) {
             if (err && err.code === 'ER_NO_SUCH_TABLE') {
@@ -4059,6 +4107,29 @@ app.delete('/api/system-admin/restaurants/:id', requireSystemAdmin, async (req, 
                 throw err;
             }
         }
+
+        // Delete menu items and their images
+        try {
+            const [menuItems] = await db.execute('SELECT image_url FROM menu_items WHERE restaurant_id = ?', [restaurantId]);
+            for (const item of menuItems) {
+                if (item.image_url) {
+                    await deleteFromCloudinary(item.image_url);
+                }
+            }
+            await db.execute('DELETE FROM menu_items WHERE restaurant_id = ?', [restaurantId]);
+        } catch (err) {
+            if (err && err.code === 'ER_NO_SUCH_TABLE') {
+                console.warn('menu_items table missing, skipping menu cleanup');
+            } else {
+                throw err;
+            }
+        }
+
+        // Delete restaurant main image/video/certificate from settings
+        if (restaurant.image_url) await deleteFromCloudinary(restaurant.image_url);
+        if (restaurant.video_url) await deleteFromCloudinary(restaurant.video_url);
+        if (restaurant.certificate_url) await deleteFromCloudinary(restaurant.certificate_url);
+        if (restaurant.menu_pdf_url) await deleteFromCloudinary(restaurant.menu_pdf_url);
 
         // Delete reservations for the restaurant (if table exists)
         try {
