@@ -50,3 +50,5 @@ $env:TIDB_PASSWORD = $null
 
 Write-Host ""
 Write-Host "Done!" -ForegroundColor Green
+
+npm install express multer multer-s3 @aws-sdk/client-s3 mysql2 dotenv
