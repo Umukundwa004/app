@@ -1055,7 +1055,7 @@ app.post('/api/auth/login', async (req, res) => {
         let users;
         try {
             [users] = await db.execute(
-                'SELECT id, name, email, password_hash, user_type, email_verified, account_locked, login_attempts FROM users WHERE email = ?',
+                'SELECT id, name, email, password_hash, user_type, email_verified FROM users WHERE email = ?',
                 [email]
             );
         } catch (dbError) {
@@ -1073,11 +1073,7 @@ app.post('/api/auth/login', async (req, res) => {
         const user = users[0];
         console.log('✅ User found:', user.email, 'Type:', user.user_type);
 
-        // Check if account is locked
-        if (user.account_locked) {
-            console.log('🔒 Account is locked:', email);
-            return res.status(423).json({ error: 'Account is locked. Please contact support or reset your password.' });
-        }
+        // Account locking removed: do not block login attempts
 
         // Verify password
         console.log('🔑 Verifying password...');
@@ -1091,38 +1087,21 @@ app.post('/api/auth/login', async (req, res) => {
         
         if (!isValidPassword) {
             console.log('❌ Invalid password for:', email);
-            // Increment login attempts
-            const newAttempts = (user.login_attempts || 0) + 1;
-            const lockAccount = newAttempts >= 100;
-            
-            try {
-                await db.execute(
-                    'UPDATE users SET login_attempts = ?, account_locked = ? WHERE id = ?',
-                    [newAttempts, lockAccount, user.id]
-                );
-            } catch (updateError) {
-                console.error('⚠️ Failed to update login attempts:', updateError);
-                // Don't fail the login attempt just because we couldn't update attempts
-            }
-
-            return res.status(401).json({ 
-                error: lockAccount ? 
-                    'Account locked due to too many failed attempts. Please reset your password.' : 
-                    'Invalid credentials' 
-            });
+            // Do not track attempts or lock accounts
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         console.log('✅ Password verified for:', email);
 
-        // Reset login attempts on successful login
+        // Update last_login on successful login (no attempt tracking)
         try {
             await db.execute(
-                'UPDATE users SET login_attempts = 0, last_login = NOW() WHERE id = ?',
+                'UPDATE users SET last_login = NOW() WHERE id = ?',
                 [user.id]
             );
         } catch (updateError) {
-            console.error('⚠️ Failed to reset login attempts:', updateError);
-            // Don't fail login just because we couldn't reset attempts
+            console.error('⚠️ Failed to update last_login:', updateError);
+            // Don't fail login if last_login update fails
         }
 
         // Create session

@@ -18,12 +18,12 @@ The password recovery system allows customers to reset their passwords using the
   2. User enters their 4-digit recovery code
   3. User creates a new password (min 6 characters)
   4. User confirms the new password
-  5. System verifies email + recovery code match
-  6. Password is updated and account is unlocked
+   5. System verifies email + recovery code match
+   6. Password is updated and you can log in immediately
 
 ### 3. Security Features
-- **Account Unlocking**: Password reset automatically unlocks locked accounts
-- **Login Attempt Reset**: Resets failed login attempts to 0
+- (Deprecated) Account unlocking: The app no longer locks accounts
+- Login attempt tracking removed
 - **Password Hashing**: New password hashed with bcrypt (12 rounds)
 - **Audit Logging**: All password resets are logged with timestamp and IP
 - **Validation**: Recovery code must be exact 4-digit match
@@ -135,8 +135,6 @@ Features:
 
 **Side Effects**:
 - Updates `password_hash` with bcrypt-hashed new password
-- Sets `login_attempts = 0`
-- Sets `account_locked = FALSE`
 - Logs action to audit log
 
 ---
@@ -337,9 +335,7 @@ AND recovery_code IS NOT NULL;
 -- First, generate bcrypt hash with 12 rounds
 -- Then update:
 UPDATE users 
-SET password_hash = 'BCRYPT_HASH_HERE',
-    login_attempts = 0,
-    account_locked = FALSE
+SET password_hash = 'BCRYPT_HASH_HERE'
 WHERE email = 'user@example.com';
 ```
 

@@ -1,363 +1,1121 @@
-# Rwanda Eats Reserve — Consolidated Documentation
+# Rwanda Eats Reserve — Food Delivery & Reservation System
 
-This repository previously contained several Markdown documents (setup, quick start, migration, implementation and feature guides). Per request, those files have been consolidated into this single canonical README so documentation is easier to find and maintain.
-
-**Note:** Vercel deployment files have been archived to `archive/` folder. This app is now deployed on Render. The archived files (`vercel.json`, `deploy.ps1`, etc.) are preserved in the `backup/vercel-files` branch if needed for reference.
-
-If you prefer any original document restored as a separate file, tell me which one and I'll restore it.
+A comprehensive food delivery and reservation platform built with Node.js, Express, MySQL/TiDB Cloud, and Tailwind CSS. Features multi-role dashboards, real-time notifications, secure authentication, and cloud-based file storage.
 
 ---
 
-## Table of contents
+## 📑 Table of Contents
 
-1. Quick start & setup
-2. Multiple images (feature summary)
-3. Migration notes
-4. Implementation & feature summaries
-5. Commands & troubleshooting
-6. Restore options
-
----
-
-## 1) Quick start & setup
-
-Summary: how to run the project locally and basic setup steps.
-
-- Install dependencies: `npm install`
-- Configure DB: update MySQL credentials in `config.js` or `server.js` (database: `rwanda_eats_reserve`).
-- Initialize DB: `node setup-database.js` or `mysql -u root -p < init-database.sql`.
-- Start server: `npm start` (development with auto-reload: `npm run dev`).
-
-Sample accounts (created by setup script):
-- System Admin: admin@rwandaeats.com / admin123
-- Restaurant Admin: admin@millecollines.rw / restaurant123
-- Customer: john@example.com / customer123
+1. [Project Overview](#project-overview)
+2. [Features](#features)
+3. [Project Structure](#project-structure)
+4. [Prerequisites](#prerequisites)
+5. [Complete Setup Guide](#complete-setup-guide)
+   - [Local Development Setup](#local-development-setup)
+   - [Database Configuration](#database-configuration)
+   - [Cloudinary Setup (File Storage)](#cloudinary-setup-file-storage)
+   - [Email Services Setup](#email-services-setup)
+6. [Running the Application](#running-the-application)
+7. [Production Deployment](#production-deployment)
+   - [Deploy to Render.com](#deploy-to-rendercom)
+   - [TiDB Cloud Setup](#tidb-cloud-setup)
+8. [Testing & Troubleshooting](#testing--troubleshooting)
+9. [API Documentation](#api-documentation)
+10. [Additional Guides](#additional-guides)
 
 ---
 
-## 2) Multiple images — feature summary
+## 🎯 Project Overview
 
-Summary: the project supports multiple images per restaurant via a dedicated `restaurant_images` table and related API/front-end changes.
+Rwanda Eats Reserve is a full-featured food reservation and delivery system with three distinct user roles:
 
-- New schema: `restaurant_images` (id, restaurant_id, image_url, is_primary, display_order, created_at).
-- Endpoints: `GET /api/restaurants/:id/images`, `PUT /api/restaurants/:restaurantId/images/:imageId/primary`, `DELETE /api/restaurants/:restaurantId/images/:imageId`.
-- Frontend: Restaurant admins can upload multiple images with preview, set primary image and delete images. Customers see a gallery in the restaurant details modal; the primary image is used for listing cards.
-- Migration: optional SQL/Script to copy existing `restaurants.image_url` values to the new table.
+- **Customers**: Browse restaurants, make reservations, manage profiles
+- **Restaurant Admins**: Manage restaurant details, menus, reservations
+- **System Admins**: Oversee all restaurants, users, and system operations
 
----
+### Key Capabilities
 
-## 3) Migration notes
-
-Summary: how to create the `restaurant_images` table and related DB changes.
-
-- Option A (Node): `node run-migration.js` (ensure DB credentials in `config.js`).
-- Option B (SQL): run the provided CREATE TABLE SQL snippet in your MySQL client.
-- Verify: `DESCRIBE restaurant_images;` and `SHOW TABLES LIKE 'restaurant_images';`.
-
-If you already have `restaurants.image_url` values, migrate them with the provided `INSERT ... SELECT` snippet.
+- 🍽️ Multi-image restaurant galleries with cloud storage
+- 📅 Real-time reservation management system
+- 📧 Email notifications (MailerSend/Brevo integration)
+- 🔐 JWT-based authentication with password recovery
+- 📱 Progressive Web App (PWA) support
+- ☁️ Cloud-ready architecture (TiDB Cloud, Cloudinary)
+- 🎨 Modern UI with Tailwind CSS
 
 ---
 
-## 4) Implementation & feature summaries
+## ✨ Features
 
-Summary: high-level developer notes about changed files and features that used to be documented in separate files.
+- **Authentication System**
+  - Secure registration with email verification
+  - 4-digit recovery code for password reset
+  - JWT tokens and session management
+  - Optional rate limiting (no account lockout)
 
-- Backend (`server.js`): image management endpoints, Multer updates for multiple files, admin creation flow enhancements, password reset endpoints with verification code.
-- Frontend: `views/*` and `public/js/*` updated to support image galleries, multiple-image uploads, previews, and full credential editing for restaurants.
-- Migration files: `migration-restaurant-images.sql` and possibly `run-migration.js` (if present in repo).
-- Feature highlights: forgot-password 6-digit code flow, system-admin creation of restaurant-admin during restaurant creation, and testing checklists.
+- **Restaurant Management**
+  - Multi-image galleries with primary image selection
+  - Video and PDF document support (menus, certificates)
+  - Operating hours and cuisine type management
+  - Real-time availability tracking
 
----
+- **Reservation System**
+  - Date and time-based booking
+  - Party size management
+  - Status tracking (pending, confirmed, cancelled)
+  - Customer and admin dashboards
 
-## 5) Commands & troubleshooting
-
-- Install: `npm install`
-- Setup DB: `node setup-database.js` or `mysql -u root -p < init-database.sql`
-- Run migration: `node run-migration.js`
-- Start: `npm start`
-
-Common issues:
-- DB access denied → update credentials in `config.js`/`server.js`.
-- Port in use → change port or kill process.
-- Missing modules → run `npm install`.
-
----
-
-## 6) Restore options
-
-I consolidated these source Markdown files into this README:
-- `SETUP.md`
-- `QUICK_START.md`
-- `MULTIPLE_IMAGES_GUIDE.md`
-- `MIGRATION_QUICK_START.md`
-- `MIGRATION_INSTRUCTIONS.md`
-- `IMPLEMENTATION_SUMMARY.md`
-- `FEATURES_SUMMARY.md`
-
-If you want any of these restored as standalone files (unchanged originals), tell me which ones and I will recreate them exactly as they were.
+- **Cloud Integration**
+  - Cloudinary for file storage (images, videos, PDFs)
+  - TiDB Cloud / MySQL database support
+  - SSL/TLS encrypted connections
+  - Persistent sessions in database
 
 ---
 
-Consolidation performed on request. If you'd like me to also remove the original `.md` files now (so only this README remains), I can delete them; or I can move them to a `docs/` folder—tell me which you prefer.
+## 📁 Project Structure
 
-
-Before you begin, ensure you have the following installed:
-- Node.js (v14 or higher)
-- MySQL (v5.7 or higher)
-- npm or yarn package manager
-
-## Installation & Setup
-
-### Step 1: Clone or Download the Project
-
-```bash
-cd c:\Users\LENOVO\OneDrive\Desktop\courses\app
+```
+Delivery-app/
+├── backend/                    # Server-side code
+│   ├── server.js              # Main Express server
+│   ├── config/                # Configuration files
+│   │   └── config.js          # Database and app config
+│   ├── controllers/           # Business logic (empty - ready for use)
+│   ├── middleware/            # Auth, validation middleware (empty)
+│   ├── models/                # Database models (empty)
+│   ├── routes/                # API routes (empty)
+│   ├── utils/                 # Helper functions (empty)
+│   ├── migrations/            # Database SQL files
+│   │   ├── database.sql       # Main database schema
+│   │   ├── init-database.sql  # Initial setup
+│   │   └── *.sql             # Feature migrations
+│   └── scripts/               # Utility scripts
+│       ├── setup-database.js  # Database initialization
+│       ├── import-to-tidb.js  # TiDB import
+│       └── *.js              # Various utilities
+│
+├── frontend/                   # Client-side code
+│   ├── public/                # Static assets
+│   │   ├── css/               # Compiled CSS
+│   │   │   └── output.css     # Tailwind compiled output
+│   │   ├── js/                # JavaScript files
+│   │   │   ├── customer.js
+│   │   │   ├── restaurant-admin.js
+│   │   │   └── system-admin.js
+│   │   ├── uploads/           # User uploads (local dev)
+│   │   ├── manifest.json      # PWA manifest
+│   │   └── service-worker.js  # PWA service worker
+│   ├── src/                   # Source files
+│   │   └── input.css          # Tailwind input
+│   └── views/                 # HTML templates
+│       ├── customer.html
+│       ├── system-admin.html
+│       ├── restaurant-admin.html
+│       ├── login.html
+│       ├── register.html
+│       └── *.html
+│
+└── (root)                      # Configuration
+    ├── package.json           # Dependencies and scripts
+    ├── tailwind.config.js     # Tailwind configuration
+    ├── .env                   # Environment variables
+    ├── README.md              # This file
+    └── *.md                   # Additional documentation
 ```
 
-### Step 2: Install Dependencies
+**📖 Detailed Structure:** See [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)
+
+---
+
+## ⚙️ Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** v14 or higher ([Download](https://nodejs.org/))
+- **MySQL** v5.7+ or **TiDB Cloud** account ([TiDB Cloud](https://tidbcloud.com/))
+- **npm** or **yarn** (comes with Node.js)
+- **Git** (for version control)
+- **Code Editor** (VS Code recommended)
+
+---
+
+## 🚀 Complete Setup Guide
+
+### Step 1: Local Development Setup
+
+#### 1.1 Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd Delivery-app
+```
+
+#### 1.2 Install Dependencies
 
 ```bash
 npm install
 ```
 
-This will install:
-- express
-- mysql2
-- bcryptjs
-- jsonwebtoken
-- express-session
-- nodemailer
+This installs all required packages:
+- Express.js - Web framework
+- MySQL2 - Database driver
+- Bcryptjs - Password hashing
+- JWT - Authentication tokens
+- Cloudinary - File storage
+- MailerSend/Brevo - Email services
+- Tailwind CSS - Styling
+- And more...
 
-### Step 3: Configure MySQL
+#### 1.3 Create Environment File
 
-1. Make sure MySQL is running on your system
-2. Update the database credentials in `config.js` if needed:
-   - Default host: `localhost`
-   - Default user: `root`
-   - Default password: `` (empty)
-   
-If your MySQL root user has a password, update the `config.js` file:
+Create a `.env` file in the root directory:
 
-```javascript
-db: {
-    host: 'localhost',
-    user: 'root',
-    password: 'YOUR_MYSQL_PASSWORD', // Add your password here
-    database: 'rwanda_eats_reserve'
-}
+**`.env` Template:**
+
+```env
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# For Local MySQL:
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=rwanda_eats_reserve
+DB_SSL=false
+
+# ============================================
+# SECURITY KEYS (REQUIRED)
+# ============================================
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+SESSION_SECRET=your-super-secret-session-key-different-from-jwt
+
+# ============================================
+# CLOUDINARY (FILE STORAGE)
+# ============================================
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# ============================================
+# EMAIL SERVICES (OPTIONAL BUT RECOMMENDED)
+# ============================================
+# MailerSend
+MAILERSEND_API_KEY=your_mailersend_api_key
+MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+MAILERSEND_FROM_NAME=Rwanda Eats Reserve
+
+# Brevo (Alternative)
+BREVO_API_KEY=your_brevo_api_key
+
+# ============================================
+# APPLICATION SETTINGS
+# ============================================
+NODE_ENV=development
+PORT=3000
+BASE_URL=http://localhost:3000
 ```
 
-### Step 4: Set Up the Database
+**📖 Complete Checklist:** See [`ENV_CHECKLIST.md`](ENV_CHECKLIST.md)
 
-Run the setup script to create the database, tables, and sample data:
+---
+
+### Step 2: Database Configuration
+
+#### 2.1 Install MySQL Locally (Option A)
+
+**Windows:**
+1. Download MySQL Installer from [mysql.com](https://dev.mysql.com/downloads/installer/)
+2. Run installer and choose "Developer Default"
+3. Set root password during installation
+4. Complete installation
+
+**Mac (using Homebrew):**
+```bash
+brew install mysql
+brew services start mysql
+mysql_secure_installation
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install mysql-server
+sudo mysql_secure_installation
+```
+
+#### 2.2 Create Database and Tables
+
+Run the setup script to automatically create the database and all tables:
 
 ```bash
-node setup-database.js
+node backend/scripts/setup-database.js
 ```
 
-This will create:
-- Database: `rwanda_eats_reserve`
-- All necessary tables
-- Sample users, restaurants, and menu items
-- Email and SMS templates
+This script will:
+- ✅ Create `rwanda_eats_reserve` database
+- ✅ Create all required tables (users, restaurants, reservations, etc.)
+- ✅ Insert sample data (admin users, restaurants, menu items)
+- ✅ Set up audit logging
+- ✅ Configure session storage
 
-### Step 5: Start the Server
+**Expected Output:**
+```
+✅ Database created successfully
+✅ Tables created successfully
+✅ Sample data inserted
+✅ Setup complete!
+```
+
+#### 2.3 Verify Database
+
+Login to MySQL and check:
+
+```bash
+mysql -u root -p
+```
+
+```sql
+SHOW DATABASES;
+USE rwanda_eats_reserve;
+SHOW TABLES;
+
+-- Should display these tables:
+-- users, restaurants, restaurant_images, reservations,
+-- menu_items, audit_logs, sessions, user_favorites, etc.
+
+-- Check sample data
+SELECT * FROM users WHERE user_type = 'system_admin';
+SELECT * FROM restaurants LIMIT 5;
+```
+
+---
+
+### Step 3: Cloudinary Setup (File Storage)
+
+**Why Cloudinary?** 
+Cloud storage is required for production deployment (Render, Vercel, etc.) because uploaded files don't persist on serverless platforms.
+
+#### 3.1 Create Cloudinary Account
+
+1. Go to [cloudinary.com](https://cloudinary.com)
+2. Click "Sign Up For Free"
+3. Verify your email
+4. Login to dashboard
+
+#### 3.2 Get Credentials
+
+From your Cloudinary Dashboard:
+
+1. Find **Account Details** section
+2. Copy these values:
+   - **Cloud Name**: `your_cloud_name`
+   - **API Key**: `123456789012345`
+   - **API Secret**: `abcdefghijklmnopqrstuvwxyz`
+
+#### 3.3 Add to .env File
+
+```env
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+#### 3.4 Test File Upload
+
+1. Start the server: `npm run dev`
+2. Login as system admin
+3. Go to Restaurants → Edit Restaurant
+4. Upload an image
+5. Verify URL starts with `https://res.cloudinary.com/`
+
+**Expected Console Output:**
+```
+Cloudinary configured successfully
+```
+
+**📖 Detailed Guide:** See [`CLOUDINARY_SETUP.md`](CLOUDINARY_SETUP.md)
+
+---
+
+### Step 4: Email Services Setup (Optional)
+
+Email services enable:
+- Email verification during registration
+- Password reset emails
+- Reservation confirmations
+- Notification system
+
+#### Option A: MailerSend (Recommended)
+
+1. Sign up at [mailersend.com](https://www.mailersend.com/)
+2. Verify your domain (or use their test domain)
+3. Create API token
+4. Add to `.env`:
+
+```env
+MAILERSEND_API_KEY=your_api_key
+MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+MAILERSEND_FROM_NAME=Rwanda Eats Reserve
+```
+
+#### Option B: Brevo (Alternative)
+
+1. Sign up at [brevo.com](https://www.brevo.com/)
+2. Go to SMTP & API settings
+3. Create API key
+4. Add to `.env`:
+
+```env
+BREVO_API_KEY=your_brevo_api_key
+```
+
+**Note:** App works without email services, but verification features will be disabled.
+
+---
+
+### Step 5: Build Tailwind CSS
+
+Compile Tailwind CSS before running the app:
+
+```bash
+npm run build:css
+```
+
+This creates `frontend/public/css/output.css` from `frontend/src/input.css`.
+
+For development with auto-rebuild:
+
+```bash
+npm run watch:css
+```
+
+**Expected Output:**
+```
+Rebuilding...
+Done in 245ms.
+```
+
+**📖 Tailwind Configuration:** See [`TAILWIND.md`](TAILWIND.md)
+
+---
+
+## ▶️ Running the Application
+
+### Development Mode (with auto-restart)
+
+```bash
+npm run dev
+```
+
+Server starts at: **http://localhost:3000**
+
+Features:
+- Auto-restart on file changes (using nodemon)
+- Detailed error logs
+- Hot reload
+
+### Production Mode
 
 ```bash
 npm start
 ```
 
-Or for development with auto-restart:
+Features:
+- Optimized performance
+- Minimal logging
+- No auto-restart
 
-```bash
-npm run dev
-```
+### Test Accounts
 
-The server will start on `http://localhost:3000`
+After running `setup-database.js`, you can login with:
 
-## Test Accounts
+| Role | Email | Password |
+|------|-------|----------|
+| System Admin | `admin@rwandaeats.com` | `admin123` |
+| Restaurant Admin | `admin@millecollines.rw` | `restaurant123` |
+| Customer | `john@example.com` | `customer123` |
 
-After running the setup script, you can use these test accounts:
+### Access Points
 
-### System Admin
-- **Email**: admin@rwandaeats.com
-- **Password**: admin123
-- **Access**: Full system administration
-
-### Restaurant Admin
-- **Email**: admin@millecollines.rw
-- **Password**: restaurant123
-- **Access**: Restaurant management
-
-### Customer
-- **Email**: john@example.com
-- **Password**: customer123
-- **Access**: Customer features
-
-## Project Structure
-
-```
-app/
-├── views/                  # Frontend HTML files
-│   ├── customer.html       # Customer interface
-│   ├── login.html         # Login page
-│   ├── register.html      # Registration page
-│   ├── verify-email.html  # Email verification
-│   ├── restaurant-admin.html  # Restaurant admin dashboard
-│   └── system-admin.html  # System admin dashboard
-├── public/                # Static files
-│   ├── css/              # Stylesheets
-│   ├── js/               # Frontend JavaScript
-│   │   ├── customer.js
-│   │   ├── restaurant-admin.js
-│   │   └── system-admin.js
-│   └── images/           # Images
-├── server.js             # Main Express server
-├── config.js             # Configuration file
-├── database.sql          # Database schema
-├── setup-database.js     # Database setup script
-├── package.json          # Dependencies
-└── README.md            # This file
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/verify-email` - Email verification
-- `POST /api/auth/forgot-password` - Password reset request
-- `POST /api/auth/reset-password` - Password reset
-- `GET /api/auth/me` - Get current user
-
-### Restaurants (Public)
-- `GET /api/restaurants` - Get all restaurants (with filters)
-- `GET /api/restaurants/:id/menu` - Get restaurant menu
-
-### Reservations
-- `POST /api/reservations` - Create reservation
-- `PUT /api/reservations/:id/status` - Update reservation status
-
-### Notifications
-- `GET /api/notifications` - Get user notifications
-- `PUT /api/notifications/:id/read` - Mark notification as read
-
-### Restaurant Admin (Auth Required)
-- `GET /api/restaurant-admin/dashboard-stats` - Dashboard statistics
-- `GET /api/restaurant-admin/reservations` - Get reservations
-- `GET /api/restaurant-admin/restaurants` - Get restaurants
-- `POST /api/restaurant-admin/restaurants` - Create restaurant
-- `PUT /api/restaurants/:id` - Update restaurant
-- `GET /api/menu-items` - Get menu items
-- `POST /api/menu-items` - Create menu item
-- `PUT /api/menu-items/:id` - Update menu item
-- `DELETE /api/menu-items/:id` - Delete menu item
-- `POST /api/table-availability` - Update table availability
-- `GET /api/restaurant-admin/reports` - Get reports
-
-### System Admin (Auth Required)
-- `GET /api/system-admin/stats` - System statistics
-- `GET /api/system-admin/users` - Get all users
-- `POST /api/system-admin/users` - Create user
-- `PUT /api/system-admin/users/:id` - Update user
-- `DELETE /api/system-admin/users/:id` - Delete user
-- `PUT /api/system-admin/users/:id/unlock` - Unlock user account
-- `GET /api/system-admin/restaurants` - Get all restaurants
-- `PUT /api/system-admin/restaurants/:id/status` - Update restaurant status
-- `GET /api/system-admin/reservations` - Get all reservations
-- `GET /api/system-admin/audit-logs` - Get audit logs
-
-## Features in Detail
-
-### Authentication & Security
-- JWT-based token authentication
-- Bcrypt password hashing (12 rounds)
-- Session management
-- Account lockout after 5 failed login attempts
-- Email verification system
-- Password reset functionality
-- Audit logging for all actions
-
-### Notification System
-- In-app notifications
-- Email notifications (configurable)
-- SMS notifications (configurable)
-- Automatic reservation reminders
-- Welcome emails
-- Reservation confirmation emails
-
-### Reservation Management
-- Real-time availability checking
-- Automatic status updates
-- Notification triggers on status changes
-- Special requests handling
-- Party size tracking
-- Occasion tracking
-
-### Reporting & Analytics
-- Reservation statistics
-- Occupancy rates
-- Daily/weekly/monthly reports
-- Restaurant performance metrics
-- User activity tracking
-
-## Troubleshooting
-
-### Database Connection Issues
-If you encounter database connection errors:
-1. Verify MySQL is running: `mysql --version`
-2. Check MySQL credentials in `config.js`
-3. Ensure the database exists: `node setup-database.js`
-
-### Port Already in Use
-If port 3000 is already in use:
-1. Change the port in `config.js`
-2. Or kill the process using port 3000
-
-### Module Not Found Errors
-Run `npm install` to ensure all dependencies are installed
-
-## Development
-
-To run in development mode with auto-restart:
-
-```bash
-npm run dev
-```
-
-This uses nodemon to automatically restart the server when files change.
-
-## Production Deployment
-
-Before deploying to production:
-
-1. Update environment variables in `config.js`:
-   - Set strong `jwtSecret` and `sessionSecret`
-   - Configure real email SMTP settings
-   - Set secure database credentials
-
-2. Enable HTTPS and secure cookies
-
-3. Configure proper CORS settings if needed
-
-4. Set up proper logging and monitoring
-
-5. Use a process manager like PM2:
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name rwanda-eats
-   ```
-
-## License
-
-MIT License
-
-## Support
-
-For issues and questions, please contact the development team.
+- **Homepage**: http://localhost:3000/
+- **Login**: http://localhost:3000/login
+- **Register**: http://localhost:3000/register
+- **Customer Dashboard**: http://localhost:3000/customer
+- **System Admin**: http://localhost:3000/system-admin
+- **Restaurant Admin**: http://localhost:3000/restaurant-admin
 
 ---
 
-_Consolidation performed on request — other Markdown files were removed to leave a single README._
+## 🌐 Production Deployment
 
+### Deploy to Render.com
+
+Render.com provides free hosting for Node.js applications with persistent databases.
+
+#### Prerequisites
+
+1. **Cloud Database** (Choose one):
+   - TiDB Cloud (recommended) - See [TiDB Setup](#tidb-cloud-setup)
+   - PlanetScale (free tier)
+   - Railway (free tier)
+   - AWS RDS MySQL
+
+2. **Cloudinary Account** (required for file uploads)
+
+#### Deployment Steps
+
+**1. Prepare Database**
+
+Export your local database:
+
+```powershell
+# Windows PowerShell
+.\export-full-backup.ps1
+```
+
+```bash
+# Mac/Linux
+mysqldump -u root -p rwanda_eats_reserve > backup.sql
+```
+
+Import to cloud database (TiDB example):
+
+```bash
+node backend/scripts/import-to-tidb.js
+```
+
+**2. Connect GitHub to Render**
+
+1. Go to [render.com](https://render.com)
+2. Sign up / Login
+3. Click "New +" → "Web Service"
+4. Connect your GitHub repository
+5. Select `Delivery-app` repository
+
+**3. Configure Build Settings**
+
+- **Name**: `rwanda-eats-reserve`
+- **Environment**: `Node`
+- **Build Command**: `npm install && npm run build:css`
+- **Start Command**: `npm start`
+- **Instance Type**: Free (or paid for better performance)
+
+**4. Set Environment Variables**
+
+In Render Dashboard → Environment tab, add:
+
+```env
+# Database (TiDB Cloud example)
+DB_HOST=gateway01.eu-central-1.prod.aws.tidbcloud.com
+DB_PORT=4000
+DB_USER=your_tidb_username
+DB_PASSWORD=your_tidb_password
+DB_NAME=rwanda_eats_reserve
+DB_SSL=true
+
+# Security
+JWT_SECRET=your-production-jwt-secret-at-least-32-chars
+SESSION_SECRET=your-production-session-secret-different
+NODE_ENV=production
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Email (Optional)
+MAILERSEND_API_KEY=your_mailersend_key
+MAILERSEND_FROM_EMAIL=noreply@yourdomain.com
+MAILERSEND_FROM_NAME=Rwanda Eats Reserve
+
+# Base URL (update after deployment)
+BASE_URL=https://your-app-name.onrender.com
+```
+
+**5. Deploy**
+
+1. Click "Create Web Service"
+2. Wait 5-10 minutes for deployment
+3. Check logs for "✅ Database connection OK"
+4. Visit your app URL
+
+**6. Verify Deployment**
+
+Test these endpoints:
+- Homepage: `https://your-app.onrender.com/`
+- Health check: `https://your-app.onrender.com/api/health`
+- Login: `https://your-app.onrender.com/login`
+
+**📖 Complete Guides:** 
+- [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) - Complete deployment instructions
+- [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md) - Pre-deployment checklist
+- [`DEPLOYMENT_SYNC_GUIDE.md`](DEPLOYMENT_SYNC_GUIDE.md) - Keep deployments in sync
+
+---
+
+### TiDB Cloud Setup
+
+TiDB Cloud provides MySQL-compatible serverless database with generous free tier.
+
+#### 1. Create TiDB Account
+
+1. Go to [tidbcloud.com](https://tidbcloud.com)
+2. Sign up for free account
+3. Verify email
+
+#### 2. Create Cluster
+
+1. Click "Create Cluster"
+2. Choose "Serverless Tier" (free)
+3. Select region closest to your users
+4. Name: `rwanda-eats-reserve`
+5. Click "Create"
+
+#### 3. Get Connection Details
+
+1. Select your cluster
+2. Click "Connect"
+3. Choose "General" connection type
+4. Copy connection details:
+   - **Host**: `gateway01.{region}.prod.aws.tidbcloud.com`
+   - **Port**: `4000`
+   - **User**: Your username
+   - **Password**: Your password
+   - **Database**: `rwanda_eats_reserve`
+
+#### 4. Configure Environment
+
+Add to `.env` file:
+
+```env
+# TiDB Cloud Configuration
+TIDB_HOST=gateway01.eu-central-1.prod.aws.tidbcloud.com
+TIDB_PORT=4000
+TIDB_USER=your_username
+TIDB_PASSWORD=your_password
+TIDB_DATABASE=rwanda_eats_reserve
+```
+
+Or update existing DB_ variables:
+
+```env
+DB_HOST=gateway01.eu-central-1.prod.aws.tidbcloud.com
+DB_PORT=4000
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=rwanda_eats_reserve
+DB_SSL=true
+```
+
+#### 5. Import Data
+
+```bash
+# Test connection
+node backend/scripts/test-tidb-connection.js
+
+# Import data
+node backend/scripts/import-to-tidb.js
+
+# Verify data
+node backend/scripts/verify-tidb-data.js
+```
+
+**Expected Output:**
+```
+✅ Connected to TiDB Cloud
+✅ Data imported successfully
+✅ Verification complete
+```
+
+**📖 Complete Guides:** 
+- [`TIDB_SETUP.md`](TIDB_SETUP.md) - TiDB Cloud setup guide
+- [`CONNECT_TIDB_TO_RENDER.md`](CONNECT_TIDB_TO_RENDER.md) - TiDB + Render integration
+
+---
+
+## 🧪 Testing & Troubleshooting
+
+### Run Tests
+
+```powershell
+# Test database connection
+node backend/scripts/test-tidb-connection.js
+
+# Test password reset flow
+.\test-password-reset.ps1
+
+# Test full application flow
+.\test-full-flow.ps1
+
+# Check deployment sync
+.\verify-deployment.ps1
+```
+
+### Common Issues
+
+#### Issue: "Database connection failed"
+
+**Symptoms:**
+```
+❌ Failed to connect to the database
+Error: connect ECONNREFUSED 127.0.0.1:3306
+```
+
+**Solution:**
+1. Verify `.env` credentials are correct
+2. Check MySQL is running: `mysql -u root -p`
+3. Ensure database exists: `SHOW DATABASES;`
+4. Check firewall/SSL settings
+
+#### Issue: "Cloudinary not configured"
+
+**Symptoms:**
+```
+⚠ Cloudinary not configured
+```
+
+**Solution:**
+1. Verify `CLOUDINARY_*` variables in `.env`
+2. Restart server after adding credentials
+3. Test: Upload an image in admin panel
+
+#### Issue: "Tailwind CSS not working"
+
+**Symptoms:**
+- No styling on pages
+- CSS not loading
+
+**Solution:**
+```bash
+npm run build:css
+# or for development
+npm run watch:css
+```
+
+#### Issue: "Registration requires recovery code"
+
+**Cause:** Database missing `recovery_code` column
+
+**Solution:**
+```bash
+node backend/scripts/add-recovery-code-column.js
+```
+
+#### Issue: "Session expired immediately"
+
+**Cause:** Session storage not configured or database connection failed
+
+**Solution:**
+1. Check database connection
+2. Verify `sessions` table exists
+3. Check `SESSION_SECRET` in `.env`
+4. Restart server
+
+#### Issue: "Port 3000 already in use"
+
+**Solution:**
+
+Windows PowerShell:
+```powershell
+# Find process using port 3000
+netstat -ano | findstr :3000
+
+# Kill the process (replace PID)
+taskkill /PID <PID> /F
+
+# Or change port in .env
+PORT=3001
+```
+
+Mac/Linux:
+```bash
+# Find and kill process
+lsof -ti:3000 | xargs kill -9
+
+# Or change port in .env
+PORT=3001
+```
+
+**📖 Detailed Troubleshooting:** 
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) - General troubleshooting
+- [`TROUBLESHOOTING_RENDER.md`](TROUBLESHOOTING_RENDER.md) - Render-specific issues
+- [`URGENT_FIX.md`](URGENT_FIX.md) - Critical fixes
+
+---
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+
+#### POST `/api/auth/register`
+Register new user account
+
+**Request:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123",
+  "phone": "0781234567",
+  "user_type": "customer",
+  "recovery_code": "1234"
+}
+```
+
+**Response (201):**
+```json
+{
+  "message": "Registration successful",
+  "user": {
+    "id": 15,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "user_type": "customer"
+  }
+}
+```
+
+#### POST `/api/auth/login`
+User login
+
+**Request:**
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePass123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Login successful",
+  "user": {
+    "id": 15,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "user_type": "customer"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+#### POST `/api/auth/reset-password`
+Reset password using recovery code
+
+**Request:**
+```json
+{
+  "email": "john@example.com",
+  "recovery_code": "1234",
+  "new_password": "NewSecurePass@2025"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Password reset successful",
+  "user": {
+    "name": "John Doe",
+    "email": "john@example.com"
+  }
+}
+```
+
+### Restaurant Endpoints
+
+#### GET `/api/restaurants`
+Get all restaurants
+
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "name": "Hôtel des Mille Collines",
+    "cuisine_type": "International",
+    "location": "Kigali City Center",
+    "phone": "0788123456",
+    "image_url": "https://res.cloudinary.com/.../image.jpg",
+    "operating_hours": "Mon-Sun: 6:00 AM - 11:00 PM"
+  }
+]
+```
+
+#### GET `/api/restaurants/:id/menu`
+Get restaurant menu
+
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "name": "Grilled Tilapia",
+    "description": "Fresh tilapia with local spices",
+    "price": 8500,
+    "category": "Main Course",
+    "is_available": true
+  }
+]
+```
+
+### Reservation Endpoints
+
+#### POST `/api/reservations`
+Create new reservation (requires authentication)
+
+**Request:**
+```json
+{
+  "restaurant_id": 1,
+  "reservation_date": "2025-12-01",
+  "reservation_time": "19:00",
+  "party_size": 4,
+  "special_requests": "Window seat preferred"
+}
+```
+
+**Response (201):**
+```json
+{
+  "message": "Reservation created successfully",
+  "reservation": {
+    "id": 42,
+    "restaurant_id": 1,
+    "reservation_date": "2025-12-01",
+    "reservation_time": "19:00:00",
+    "party_size": 4,
+    "status": "pending"
+  }
+}
+```
+
+#### PUT `/api/reservations/:id/status`
+Update reservation status (admin only)
+
+**Request:**
+```json
+{
+  "status": "confirmed"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Reservation status updated",
+  "reservation": {
+    "id": 42,
+    "status": "confirmed"
+  }
+}
+```
+
+---
+
+## 📖 Additional Guides
+
+This project includes comprehensive documentation for specific features:
+
+### Setup & Configuration
+- **[`ENV_CHECKLIST.md`](ENV_CHECKLIST.md)** - Complete environment variables checklist
+- **[`CLOUDINARY_SETUP.md`](CLOUDINARY_SETUP.md)** - Detailed Cloudinary configuration
+- **[`TIDB_SETUP.md`](TIDB_SETUP.md)** - TiDB Cloud setup guide
+- **[`CLOUD_STORAGE_GUIDE.md`](CLOUD_STORAGE_GUIDE.md)** - Cloud storage implementation
+
+### Deployment
+- **[`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions
+- **[`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
+- **[`DEPLOYMENT_SYNC_GUIDE.md`](DEPLOYMENT_SYNC_GUIDE.md)** - Keep deployments in sync
+- **[`PRODUCTION_SETUP.md`](PRODUCTION_SETUP.md)** - Production configuration
+- **[`CONNECT_TIDB_TO_RENDER.md`](CONNECT_TIDB_TO_RENDER.md)** - TiDB + Render integration
+
+### Features & Security
+- **[`PASSWORD_RECOVERY_GUIDE.md`](PASSWORD_RECOVERY_GUIDE.md)** - Password reset system documentation
+- **[`ADMIN_PASSWORD_UPDATE.md`](ADMIN_PASSWORD_UPDATE.md)** - Admin password management
+- (Deprecated) `UNLOCK_ACCOUNTS.md` - Account lockout has been removed
+
+### Troubleshooting
+- **[`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)** - General troubleshooting
+- **[`TROUBLESHOOTING_RENDER.md`](TROUBLESHOOTING_RENDER.md)** - Render-specific issues
+- **[`URGENT_FIX.md`](URGENT_FIX.md)** - Critical fixes
+
+### Project Information
+- **[`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)** - Detailed folder structure
+- **[`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md)** - Structure migration notes
+- **[`FILE_CONNECTIONS_REPORT.md`](FILE_CONNECTIONS_REPORT.md)** - File dependencies
+- **[`TAILWIND.md`](TAILWIND.md)** - Tailwind CSS configuration
+
+---
+
+## 🔒 Security Features
+
+- **Password Security**: Bcrypt hashing with 12 rounds
+- **JWT Authentication**: Secure token-based auth
+- **Session Management**: Server-side session storage in database
+- **Account Protection**: No auto-lock; consider enabling rate limiting
+- **Password Recovery**: Secure 4-digit recovery code system
+- **SQL Injection Prevention**: Prepared statements and parameterized queries
+- **XSS Protection**: Input sanitization and validation
+- **CORS Configuration**: Controlled cross-origin requests
+- **SSL/TLS Support**: Encrypted database connections
+- **Audit Logging**: Track all critical actions (login, logout, password changes)
+
+---
+
+## 📊 Database Schema
+
+### Main Tables
+
+- **users** - User accounts (customers, restaurant admins, system admins)
+  - Columns: id, name, email, password_hash, phone, user_type, recovery_code, verification_token, etc.
+  
+- **restaurants** - Restaurant information
+  - Columns: id, name, cuisine_type, location, phone, description, operating_hours, etc.
+  
+- **restaurant_images** - Multi-image gallery for restaurants
+  - Columns: id, restaurant_id, image_url, is_primary, uploaded_at
+  
+- **menu_items** - Restaurant menus
+  - Columns: id, restaurant_id, name, description, price, category, is_available
+  
+- **reservations** - Booking system
+  - Columns: id, user_id, restaurant_id, reservation_date, reservation_time, party_size, status
+  
+- **user_favorites** - Customer favorite restaurants
+  - Columns: id, user_id, restaurant_id, created_at
+  
+- **audit_logs** - System activity tracking
+  - Columns: id, user_id, action_type, details, ip_address, created_at
+  
+- **sessions** - User session storage
+  - Columns: session_id, expires, data
+
+**Full Schema:** See `backend/migrations/database.sql`
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit changes: `git commit -m 'Add AmazingFeature'`
+4. Push to branch: `git push origin feature/AmazingFeature`
+5. Open Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 💬 Support
+
+For issues, questions, or contributions:
+
+- **Issues**: Create an issue in the GitHub repository
+- **Documentation**: Check the `.md` files in the repository
+- **Email**: support@rwandaeats.com
+
+---
+
+## 🙏 Acknowledgments
+
+- **Node.js & Express** - Backend framework
+- **MySQL / TiDB Cloud** - Database
+- **Cloudinary** - Cloud storage
+- **Tailwind CSS** - UI framework
+- **MailerSend / Brevo** - Email services
+- **Render.com** - Hosting platform
+
+---
+
+**Last Updated:** November 27, 2025  
+**Version:** 1.0.0  
+**Author:** Rwanda Eats Reserve Development Team
+
+---
+
+## 🚀 Quick Start Summary
+
+For those who want to get started immediately:
+
+```bash
+# 1. Clone and install
+git clone <repo-url>
+cd Delivery-app
+npm install
+
+# 2. Create .env file
+# Copy template from above and fill in your values
+
+# 3. Setup database
+node backend/scripts/setup-database.js
+
+# 4. Build CSS
+npm run build:css
+
+# 5. Start development server
+npm run dev
+
+# 6. Open browser
+# http://localhost:3000
+
+# 7. Login with test account
+# Email: admin@rwandaeats.com
+# Password: admin123
+```
+
+**You're ready to go! 🎉**
+
+---
+
+## 📋 Step-by-Step Checklist
+
+Use this checklist to ensure you've completed all setup steps:
+
+### Local Development
+- [ ] Node.js installed (v14+)
+- [ ] MySQL installed and running
+- [ ] Repository cloned
+- [ ] Dependencies installed (`npm install`)
+- [ ] `.env` file created with all required variables
+- [ ] Database created (`node backend/scripts/setup-database.js`)
+- [ ] Database verified (tables exist)
+- [ ] Cloudinary account created
+- [ ] Cloudinary credentials added to `.env`
+- [ ] Tailwind CSS built (`npm run build:css`)
+- [ ] Server starts successfully (`npm run dev`)
+- [ ] Can login with test account
+- [ ] File upload works (images go to Cloudinary)
+
+### Production Deployment
+- [ ] Cloud database created (TiDB/PlanetScale/Railway)
+- [ ] Local database exported
+- [ ] Data imported to cloud database
+- [ ] Render.com account created
+- [ ] GitHub repository connected to Render
+- [ ] Build command set: `npm install && npm run build:css`
+- [ ] Start command set: `npm start`
+- [ ] All environment variables set in Render
+- [ ] `NODE_ENV=production` set
+- [ ] Deployment successful
+- [ ] Health check passes
+- [ ] Can login on production URL
+- [ ] Restaurants display correctly
+- [ ] Reservations work
+- [ ] File uploads work (Cloudinary)
+
+### Optional Enhancements
+- [ ] Email service configured (MailerSend/Brevo)
+- [ ] Custom domain configured
+- [ ] SSL certificate configured
+- [ ] Monitoring set up
+- [ ] Backup strategy implemented
+
+**Complete all items for a successful deployment! ✓**
