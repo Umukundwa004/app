@@ -4024,8 +4024,14 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
         
         // Execute main restaurant update if there are fields to update
         if (updateFields.length > 0) {
-            // Ensure no undefined values in updateParams (replace with null)
-            const safeParams = updateParams.map(v => v === undefined ? null : v);
+            // Utility: log and replace undefined with null
+            const safeParams = updateParams.map((v, idx) => {
+                if (v === undefined) {
+                    console.error(`Update param at index ${idx} is undefined. Setting to null. Field: ${updateFields[idx]}`);
+                    return null;
+                }
+                return v;
+            });
             safeParams.push(req.params.id);
             const updateQuery = `UPDATE restaurants SET ${updateFields.join(', ')} WHERE id = ?`;
             console.log('Update query:', updateQuery);
