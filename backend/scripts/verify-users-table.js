@@ -28,18 +28,6 @@ async function verifyUsersTable() {
     });
     console.log('─'.repeat(80));
     
-    // Check specifically for recovery_code
-    const hasRecoveryCode = columns.some(col => col.COLUMN_NAME === 'recovery_code');
-    console.log('\n🔍 recovery_code column exists:', hasRecoveryCode ? '✅ YES' : '❌ NO');
-    
-    if (!hasRecoveryCode) {
-      console.log('\n⚠️  Adding recovery_code column...');
-      await conn.execute(`
-        ALTER TABLE users 
-        ADD COLUMN recovery_code VARCHAR(4) NULL AFTER password_hash
-      `);
-      console.log('✅ recovery_code column added successfully!');
-    }
     
   } catch (error) {
     console.error('❌ Error:', error.message);

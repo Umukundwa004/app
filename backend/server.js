@@ -140,6 +140,36 @@ const upload = multer({
     }
 });
 
+// Debug logging middleware for uploads
+function logUploadDebug(req, res, next) {
+    console.log('--- Upload Debug Info ---');
+    console.log('Cloudinary config:', {
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY ? 'set' : 'unset',
+        api_secret: process.env.CLOUDINARY_API_SECRET ? 'set' : 'unset'
+    });
+    if (req.files) {
+        console.log('Files:', req.files);
+    } else if (req.file) {
+        console.log('File:', req.file);
+    } else {
+        console.log('No files found in request.');
+    }
+    next();
+}
+
+// Example: Add logUploadDebug to an upload route (repeat for all upload endpoints)
+// app.post('/api/upload', logUploadDebug, upload.single('image'), async (req, res) => {
+//     try {
+//         // ...existing upload logic...
+//     } catch (err) {
+//         console.error('Upload error:', err);
+//         res.status(500).json({ error: 'Upload failed', details: err.message });
+//     }
+// });
+
+// TODO: Add logUploadDebug to all your upload endpoints (images, videos, etc.)
+
 // MailerSend Email configuration
 let mailerSend;
 if (process.env.MAILERSEND_API_KEY) {
@@ -233,41 +263,45 @@ app.get('/service-worker.js', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'service-worker.js'));
 });
 
-// MySQL Session Store Configuration (temporarily disabled for debugging)
-// const sessionStore = new MySQLStore({
-//     host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
-//     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-//     user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
-//     password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : ''),
-//     database: process.env.DB_NAME || 'rwanda_eats_reserve',
-//     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-//     clearExpired: true,
-//     checkExpirationInterval: 900000, // Check every 15 minutes
-//     expiration: 24 * 60 * 60 * 1000, // 24 hours
-//     createDatabaseTable: true,
-//     schema: {
-//         tableName: 'sessions',
-//         columnNames: {
-//             session_id: 'session_id',
-//             expires: 'expires',
-//             data: 'data'
-//         }
-//     }
-// });
+
+// MySQL Session Store Configuration (ENABLED for production)
+let sessionStore = undefined;
+if (process.env.NODE_ENV === 'production') {
+    sessionStore = new MySQLStore({
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'rwanda_eats_reserve',
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+        clearExpired: true,
+        checkExpirationInterval: 900000, // Check every 15 minutes
+        expiration: 24 * 60 * 60 * 1000, // 24 hours
+        createDatabaseTable: true,
+        schema: {
+            tableName: 'sessions',
+            columnNames: {
+                session_id: 'session_id',
+                expires: 'expires',
+                data: 'data'
+            }
+        }
+    });
+}
 
 app.use(session({
     key: 'rwanda_eats_session',
     secret: process.env.SESSION_SECRET || 'rwanda-eats-reserve-session-secret',
-    // store: sessionStore, // Temporarily disabled
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-site in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     },
-    proxy: process.env.NODE_ENV === 'production' // Trust proxy in production
+    proxy: process.env.NODE_ENV === 'production'
 }));
 
 // Database connection pool (adjusted for serverless compatibility)
@@ -892,19 +926,13 @@ app.get('/profile', requireAuth, (req, res) => {
 // User Registration (FR 3.1)
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, phone, user_type = 'customer', recovery_code } = req.body;
+        const { name, email, password, phone, user_type = 'customer' } = req.body;
 
         // Validate input
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
         
-        // Validate recovery code for customers
-        if (user_type === 'customer') {
-            if (!recovery_code || !/^\d{4}$/.test(recovery_code)) {
-                return res.status(400).json({ error: '4-digit recovery code is required' });
-            }
-        }
 
         // Validate email format
         if (!isValidEmail(email)) {
@@ -922,10 +950,10 @@ app.post('/api/auth/register', async (req, res) => {
         const verificationToken = generateToken();
         const verificationTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Create user (store verification token, expiry, and recovery code)
+        // Create user (store verification token and expiry)
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password_hash, recovery_code, phone, user_type, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [name, email, passwordHash, recovery_code || null, phone, user_type, verificationToken, verificationTokenExpires]
+            'INSERT INTO users (name, email, password_hash, phone, user_type, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [name, email, passwordHash, phone, user_type, verificationToken, verificationTokenExpires]
         );
 
         const userId = result.insertId;
@@ -1158,15 +1186,10 @@ app.post('/api/auth/login', async (req, res) => {
 // Password Reset with Recovery Code
 app.post('/api/auth/reset-password', async (req, res) => {
     try {
-        const { email, recovery_code, new_password } = req.body;
+        const { email, new_password } = req.body;
 
-        if (!email || !recovery_code || !new_password) {
-            return res.status(400).json({ error: 'Email, recovery code, and new password are required' });
-        }
-
-        // Validate recovery code format
-        if (!/^\d{4}$/.test(recovery_code)) {
-            return res.status(400).json({ error: 'Recovery code must be 4 digits' });
+        if (!email || !new_password) {
+            return res.status(400).json({ error: 'Email and new password are required' });
         }
 
         // Validate password length
@@ -1174,14 +1197,14 @@ app.post('/api/auth/reset-password', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
 
-        // Find user with matching email and recovery code
+        // Find user with matching email
         const [users] = await db.execute(
-            'SELECT id, name, email FROM users WHERE email = ? AND recovery_code = ?',
-            [email, recovery_code]
+            'SELECT id, name, email FROM users WHERE email = ?',
+            [email]
         );
 
         if (!users || users.length === 0) {
-            return res.status(401).json({ error: 'Invalid email or recovery code' });
+            return res.status(401).json({ error: 'Invalid email' });
         }
 
         const user = users[0];
@@ -1199,7 +1222,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
         try {
             await AuditLogService.logAction(user.id, 'PASSWORD_RESET', 'user', user.id, { 
                 email,
-                method: 'recovery_code' 
+                method: 'email_only' 
             }, req);
         } catch (logError) {
             console.error('⚠️ Failed to log password reset:', logError);
@@ -3099,40 +3122,25 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
         
         await db.execute(updateQuery, updateParams);
         
-        // Handle new images upload
+        // Handle new images upload: delete old images if new ones are uploaded
         if (req.files && req.files.images && req.files.images.length > 0) {
-            // Get the current max display_order
-            const [maxOrder] = await db.execute(
-                'SELECT COALESCE(MAX(display_order), -1) as max_order FROM restaurant_images WHERE restaurant_id = ?',
-                [req.params.id]
-            );
-            
-            let nextOrder = maxOrder[0].max_order + 1;
+            // Delete all old images for this restaurant
+            await db.execute('DELETE FROM restaurant_images WHERE restaurant_id = ?', [req.params.id]);
+
             let firstNewImage = null;
-            
             for (let i = 0; i < req.files.images.length; i++) {
                 const image_url = req.files.images[i].path || req.files.images[i].secure_url || req.files.images[i].url;
-                
-                // If this is the first new image and no images exist, make it primary
-                const [existingImages] = await db.execute(
-                    'SELECT COUNT(*) as count FROM restaurant_images WHERE restaurant_id = ?',
-                    [req.params.id]
-                );
-                
-                const is_primary = existingImages[0].count === 0 && i === 0;
-                
+                const is_primary = i === 0;
                 await db.execute(
                     `INSERT INTO restaurant_images (restaurant_id, image_url, is_primary, display_order) 
                      VALUES (?, ?, ?, ?)`,
-                    [req.params.id, image_url, is_primary, nextOrder + i]
+                    [req.params.id, image_url, is_primary, i]
                 );
-                
-                if (i === 0 && is_primary) {
+                if (i === 0) {
                     firstNewImage = image_url;
                 }
             }
-            
-            // Update restaurant's image_url if this is the first image
+            // Update restaurant's image_url to the new primary image
             if (firstNewImage) {
                 await db.execute(
                     'UPDATE restaurants SET image_url = ? WHERE id = ?',

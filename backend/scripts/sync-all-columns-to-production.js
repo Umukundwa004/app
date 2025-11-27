@@ -30,12 +30,6 @@ async function syncAllColumnsToProduction() {
     // Migrations to run
     const migrations = [
       {
-        table: 'users',
-        column: 'recovery_code',
-        sql: 'ALTER TABLE users ADD COLUMN recovery_code VARCHAR(4) NULL AFTER password_hash',
-        description: 'Add recovery_code to users table'
-      },
-      {
         table: 'restaurants',
         column: 'operating_hours',
         sql: 'ALTER TABLE restaurants ADD COLUMN operating_hours JSON NULL AFTER closing_time',

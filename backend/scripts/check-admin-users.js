@@ -22,22 +22,8 @@ async function checkUsers() {
     console.log('\nRestaurant Admin (admin@millecollines.rw):');
     console.table(restaurantAdmins);
 
-    // Alter table to add recovery_code column
-    await db.execute(
-        'ALTER TABLE users ADD COLUMN recovery_code VARCHAR(4) NULL AFTER password_hash'
-    );
-    console.log('\nTable users altered: recovery_code column added.');
 
-    // Check if recovery_code column exists
-    const [columns] = await db.execute(
-        "SHOW COLUMNS FROM users LIKE 'recovery_code'"
-    );
 
-    if (columns.length > 0) {
-        console.log("recovery_code column exists in users table.");
-    } else {
-        console.log("recovery_code column does not exist in users table.");
-    }
 
     // Alter restaurants table to add operating_hours column
     await db.execute(

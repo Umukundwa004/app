@@ -23,7 +23,7 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    recovery_code VARCHAR(4),
+
     phone VARCHAR(20),
     user_type ENUM('customer', 'restaurant_admin', 'system_admin') DEFAULT 'customer',
     email_verified BOOLEAN DEFAULT FALSE,
