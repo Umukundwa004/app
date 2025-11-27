@@ -14,6 +14,7 @@ class SystemAdmin {
     async init() {
         await this.checkAuth();
         this.setupEventListeners();
+        this.loadProfile(); // Load profile data on init
         this.loadDashboardData();
     }
 
