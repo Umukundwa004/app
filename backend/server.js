@@ -1534,6 +1534,96 @@ app.get('/api/user/reservation-stats', requireAuth, async (req, res) => {
     }
 });
 
+// =============================
+// User Favorites Endpoints
+// =============================
+
+// Get current user's favorite restaurants
+app.get('/api/user/favorites', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const [favorites] = await db.execute(`
+            SELECT r.* FROM user_favorites uf
+            JOIN restaurants r ON uf.restaurant_id = r.id
+            WHERE uf.user_id = ?
+            ORDER BY r.name ASC
+        `, [userId]);
+        res.json(favorites);
+    } catch (error) {
+        console.error('Error fetching favorites:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Add a restaurant to favorites
+app.post('/api/user/favorites/:restaurantId', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const restaurantId = parseInt(req.params.restaurantId, 10);
+
+        if (isNaN(restaurantId)) {
+            return res.status(400).json({ error: 'Invalid restaurant ID' });
+        }
+
+        // Ensure restaurant exists
+        const [restaurants] = await db.execute('SELECT id FROM restaurants WHERE id = ? AND is_active = TRUE', [restaurantId]);
+        if (restaurants.length === 0) {
+            return res.status(404).json({ error: 'Restaurant not found' });
+        }
+
+        // Check if already favorited
+        const [existing] = await db.execute('SELECT id FROM user_favorites WHERE user_id = ? AND restaurant_id = ?', [userId, restaurantId]);
+        if (existing.length > 0) {
+            return res.status(200).json({ message: 'Already in favorites' });
+        }
+
+        await db.execute('INSERT INTO user_favorites (user_id, restaurant_id) VALUES (?, ?)', [userId, restaurantId]);
+
+        // Log action (non-blocking)
+        AuditLogService.logAction(userId, 'FAVORITE_ADDED', 'restaurant', restaurantId, {}, req);
+
+        res.status(201).json({ message: 'Added to favorites' });
+    } catch (error) {
+        console.error('Error adding favorite:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Remove a restaurant from favorites
+app.delete('/api/user/favorites/:restaurantId', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const restaurantId = parseInt(req.params.restaurantId, 10);
+
+        if (isNaN(restaurantId)) {
+            return res.status(400).json({ error: 'Invalid restaurant ID' });
+        }
+
+        const [deleted] = await db.execute('DELETE FROM user_favorites WHERE user_id = ? AND restaurant_id = ?', [userId, restaurantId]);
+        if (deleted.affectedRows === 0) {
+            return res.status(404).json({ error: 'Favorite not found' });
+        }
+
+        AuditLogService.logAction(userId, 'FAVORITE_REMOVED', 'restaurant', restaurantId, {}, req);
+        res.json({ message: 'Removed from favorites' });
+    } catch (error) {
+        console.error('Error removing favorite:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Favorites count (optional convenience endpoint)
+app.get('/api/user/favorites/count', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const [[row]] = await db.execute('SELECT COUNT(*) AS cnt FROM user_favorites WHERE user_id = ?', [userId]);
+        res.json({ favorites: row.cnt || 0 });
+    } catch (error) {
+        console.error('Error counting favorites:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get restaurants with filters
 app.get('/api/restaurants', async (req, res) => {
     try {
