@@ -1093,7 +1093,7 @@ app.post('/api/auth/login', async (req, res) => {
             console.log('❌ Invalid password for:', email);
             // Increment login attempts
             const newAttempts = (user.login_attempts || 0) + 1;
-            const lockAccount = newAttempts >= 5;
+            const lockAccount = newAttempts >= 100;
             
             try {
                 await db.execute(
