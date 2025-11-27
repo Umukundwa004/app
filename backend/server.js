@@ -4024,13 +4024,13 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
         
         // Execute main restaurant update if there are fields to update
         if (updateFields.length > 0) {
+            // Ensure no undefined values in updateParams (replace with null)
+            const safeParams = updateParams.map(v => v === undefined ? null : v);
+            safeParams.push(req.params.id);
             const updateQuery = `UPDATE restaurants SET ${updateFields.join(', ')} WHERE id = ?`;
-            updateParams.push(req.params.id);
-            
             console.log('Update query:', updateQuery);
-            console.log('Update params:', updateParams);
-            
-            await connection.execute(updateQuery, updateParams);
+            console.log('Update params:', safeParams);
+            await connection.execute(updateQuery, safeParams);
         }
         
         // Handle multiple images upload
