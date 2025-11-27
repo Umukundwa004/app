@@ -23,6 +23,7 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    recovery_code VARCHAR(4),
     phone VARCHAR(20),
     user_type ENUM('customer', 'restaurant_admin', 'system_admin') DEFAULT 'customer',
     email_verified BOOLEAN DEFAULT FALSE,
@@ -56,7 +57,7 @@ CREATE TABLE user_sessions (
 -- Restaurants table
 CREATE TABLE restaurants (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     location VARCHAR(255),
     latitude DECIMAL(10, 8),
@@ -191,16 +192,15 @@ CREATE TABLE table_availability (
     UNIQUE KEY unique_slot (restaurant_id, date, time_slot)
 );
 
--- Insert sample users with secure passwords
--- NOTE: Use ADMIN_PASSWORD_UPDATE.md for secure credentials
+-- Insert admin users
+-- NOTE: These are placeholder users. Update with secure passwords after deployment.
+-- Use the password recovery functionality to set secure passwords.
 
 INSERT INTO users (name, email, password_hash, phone, user_type, email_verified) VALUES
 ('System Admin', 'admin@rwandaeats.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000001', 'system_admin', TRUE),
 ('Hotel des Mille Collines', 'admin@millecollines.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000002', 'restaurant_admin', TRUE),
 ('Heaven Restaurant', 'admin@heaven.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000003', 'restaurant_admin', TRUE),
-('The Hut', 'admin@thehut.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000004', 'restaurant_admin', TRUE),
-('John Doe', 'john@example.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000005', 'customer', TRUE),
-('Jane Smith', 'jane@example.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000006', 'customer', TRUE);
+('The Hut', 'admin@thehut.rw', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000004', 'restaurant_admin', TRUE);
 
 -- Insert sample restaurants
 INSERT INTO restaurants (name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, is_active) VALUES

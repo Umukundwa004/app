@@ -61,10 +61,7 @@ After deployment completes:
 
 2. **Test the Site**
    - Visit your deployed URL: `https://rwanda-eats-reserve.onrender.com`
-   - Try logging in with existing users:
-     - System Admin: `admin@rwandaeats.com`
-     - Restaurant Admin: `admin@millecollines.rw`
-     - Customer: `john@example.com`
+   - Try logging in with your user accounts
 
 3. **Verify Data**
    - Check if restaurants appear on the home page

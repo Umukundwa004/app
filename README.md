@@ -48,7 +48,6 @@ Rwanda Eats Reserve is a full-featured food reservation and delivery system with
 ## ✨ Features
 
 - **Authentication System**
-  - Secure registration with email verification
   - 4-digit recovery code for password reset
   - JWT tokens and session management
   - Optional rate limiting (no account lockout)
@@ -429,13 +428,7 @@ Features:
 
 ### Test Accounts
 
-After running `setup-database.js`, you can login with:
-
-| Role | Email | Password |
-|------|-------|----------|
-| System Admin | `admin@rwandaeats.com` | `admin123` |
-| Restaurant Admin | `admin@millecollines.rw` | `restaurant123` |
-| Customer | `john@example.com` | `customer123` |
+After running `setup-database.js`, test accounts will be created with secure passwords. Use the password reset functionality to set your own passwords.
 
 ### Access Points
 
@@ -755,12 +748,12 @@ Register new user account
 **Request:**
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "SecurePass123",
+  "name": "Your Name",
+  "email": "user@example.com",
+  "password": "YourSecurePassword123",
   "phone": "0781234567",
   "user_type": "customer",
-  "recovery_code": "1234"
+  "recovery_code": "YourRecoveryCode"
 }
 ```
 
@@ -770,8 +763,8 @@ Register new user account
   "message": "Registration successful",
   "user": {
     "id": 15,
-    "name": "John Doe",
-    "email": "john@example.com",
+    "name": "Your Name",
+    "email": "user@example.com",
     "user_type": "customer"
   }
 }
@@ -783,8 +776,8 @@ User login
 **Request:**
 ```json
 {
-  "email": "john@example.com",
-  "password": "SecurePass123"
+  "email": "user@example.com",
+  "password": "YourPassword123"
 }
 ```
 
@@ -794,8 +787,8 @@ User login
   "message": "Login successful",
   "user": {
     "id": 15,
-    "name": "John Doe",
-    "email": "john@example.com",
+    "name": "Your Name",
+    "email": "user@example.com",
     "user_type": "customer"
   },
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -808,9 +801,9 @@ Reset password using recovery code
 **Request:**
 ```json
 {
-  "email": "john@example.com",
-  "recovery_code": "1234",
-  "new_password": "NewSecurePass@2025"
+  "email": "user@example.com",
+  "recovery_code": "YourRecoveryCode",
+  "new_password": "YourNewSecurePassword@2025"
 }
 ```
 
@@ -819,8 +812,8 @@ Reset password using recovery code
 {
   "message": "Password reset successful",
   "user": {
-    "name": "John Doe",
-    "email": "john@example.com"
+    "name": "Your Name",
+    "email": "user@example.com"
   }
 }
 ```
@@ -918,36 +911,44 @@ Update reservation status (admin only)
 
 ## 📖 Additional Guides
 
-This project includes comprehensive documentation for specific features:
+Quick summaries of all documentation files in this repository:
 
 ### Setup & Configuration
-- **[`ENV_CHECKLIST.md`](ENV_CHECKLIST.md)** - Complete environment variables checklist
-- **[`CLOUDINARY_SETUP.md`](CLOUDINARY_SETUP.md)** - Detailed Cloudinary configuration
-- **[`TIDB_SETUP.md`](TIDB_SETUP.md)** - TiDB Cloud setup guide
-- **[`CLOUD_STORAGE_GUIDE.md`](CLOUD_STORAGE_GUIDE.md)** - Cloud storage implementation
+- [`ENV_CHECKLIST.md`](ENV_CHECKLIST.md) — Complete environment variables required for local and production.
+- [`CLOUDINARY_SETUP.md`](CLOUDINARY_SETUP.md) — Configure Cloudinary credentials and verify uploads.
+- [`TIDB_SETUP.md`](TIDB_SETUP.md) — Create TiDB serverless cluster and connect from the app.
+- [`CLOUD_STORAGE_GUIDE.md`](CLOUD_STORAGE_GUIDE.md) — Why cloud storage is needed and how to enable it.
 
 ### Deployment
-- **[`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions
-- **[`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
-- **[`DEPLOYMENT_SYNC_GUIDE.md`](DEPLOYMENT_SYNC_GUIDE.md)** - Keep deployments in sync
-- **[`PRODUCTION_SETUP.md`](PRODUCTION_SETUP.md)** - Production configuration
-- **[`CONNECT_TIDB_TO_RENDER.md`](CONNECT_TIDB_TO_RENDER.md)** - TiDB + Render integration
+- [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) — End-to-end deployment steps on Render.
+- [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md) — Pre-deploy checklist to avoid common failures.
+- [`DEPLOYMENT_SYNC_GUIDE.md`](DEPLOYMENT_SYNC_GUIDE.md) — Keep environments in sync; data and config parity.
+- [`PRODUCTION_SETUP.md`](PRODUCTION_SETUP.md) — Production choices, env vars, and recommended settings.
+- [`CONNECT_TIDB_TO_RENDER.md`](CONNECT_TIDB_TO_RENDER.md) — Connect Render service to TiDB Cloud.
+- [`LAST_DEPLOY.md`](LAST_DEPLOY.md) — Notes and verification steps from the last deployment.
 
 ### Features & Security
-- **[`PASSWORD_RECOVERY_GUIDE.md`](PASSWORD_RECOVERY_GUIDE.md)** - Password reset system documentation
-- **[`ADMIN_PASSWORD_UPDATE.md`](ADMIN_PASSWORD_UPDATE.md)** - Admin password management
-- (Deprecated) `UNLOCK_ACCOUNTS.md` - Account lockout has been removed
+- [`PASSWORD_RECOVERY_GUIDE.md`](PASSWORD_RECOVERY_GUIDE.md) — Recovery code flow and endpoints.
+- [`ADMIN_PASSWORD_UPDATE.md`](ADMIN_PASSWORD_UPDATE.md) — How admins update their passwords safely.
+- [`UNLOCK_ACCOUNTS.md`](UNLOCK_ACCOUNTS.md) — Historical unlock steps; feature now removed.
 
 ### Troubleshooting
-- **[`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)** - General troubleshooting
-- **[`TROUBLESHOOTING_RENDER.md`](TROUBLESHOOTING_RENDER.md)** - Render-specific issues
-- **[`URGENT_FIX.md`](URGENT_FIX.md)** - Critical fixes
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) — General diagnostics and fixes.
+- [`TROUBLESHOOTING_RENDER.md`](TROUBLESHOOTING_RENDER.md) — Render-specific errors and remedies.
+- [`URGENT_FIX.md`](URGENT_FIX.md) — Fast fixes for critical incidents.
 
 ### Project Information
-- **[`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md)** - Detailed folder structure
-- **[`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md)** - Structure migration notes
-- **[`FILE_CONNECTIONS_REPORT.md`](FILE_CONNECTIONS_REPORT.md)** - File dependencies
-- **[`TAILWIND.md`](TAILWIND.md)** - Tailwind CSS configuration
+- [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) — Folder layout and key files.
+- [`MIGRATION_GUIDE.md`](MIGRATION_GUIDE.md) — How the project evolved and migrated.
+- [`FILE_CONNECTIONS_REPORT.md`](FILE_CONNECTIONS_REPORT.md) — Cross-file dependencies and integrations.
+- [`TAILWIND.md`](TAILWIND.md) — Tailwind setup, build, and watch commands.
+
+### Operational Scripts (root)
+- [`deploy.ps1`](deploy.ps1) / [`deploy.sh`](archive/deploy.sh) — Deployment helpers.
+- [`export-full-backup.ps1`](export-full-backup.ps1) — Full DB export for backup/migration.
+- [`import-to-tidb.ps1`](import-to-tidb.ps1) / [`import-updated-to-tidb.ps1`](import-updated-to-tidb.ps1) — Import backups to TiDB.
+- [`verify-deployment.ps1`](verify-deployment.ps1) — Validate environment and endpoints post-deploy.
+- [`pre-deployment-check.ps1`](pre-deployment-check.ps1) — Automated preflight checks.
 
 ---
 
@@ -1066,9 +1067,8 @@ npm run dev
 # 6. Open browser
 # http://localhost:3000
 
-# 7. Login with test account
-# Email: admin@rwandaeats.com
-# Password: admin123
+# 7. Login with your account
+# Use the account you created during setup
 ```
 
 **You're ready to go! 🎉**

@@ -112,7 +112,7 @@ git push origin main
 
 **Test System Admin:**
 - URL: `https://your-app.onrender.com/login`
-- ✅ Login as admin (admin@rwandaeats.com)
+- ✅ Login as admin and verify functionality
 - ✅ Check: Dashboard loads
 - ✅ Check: Restaurants list shows all restaurants
 - ✅ Test: Edit restaurant details

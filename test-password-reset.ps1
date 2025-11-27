@@ -1,9 +1,9 @@
 # Test Password Reset Flow
 Write-Host "`n=== Testing Password Reset with Recovery Code ===" -ForegroundColor Cyan
 
-# Test credentials
-$email = "john@example.com"
-$recoveryCode = "1234"
+# Test credentials - update with actual test user
+$email = "testuser@example.com"
+$recoveryCode = "your-recovery-code"
 $newPassword = "NewPassword@2025!"
 
 Write-Host "`n1. Creating test user with recovery code..." -ForegroundColor Yellow

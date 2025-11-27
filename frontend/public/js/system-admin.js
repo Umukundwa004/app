@@ -165,8 +165,13 @@ class SystemAdmin {
             });
         });
 
-        // Note: Save/Cancel buttons for the restaurant modal were removed from the DOM
-        // so explicit event listeners for those IDs were removed to avoid unused handlers.
+        // Cancel button for restaurant modal
+        const cancelRestaurantBtn = document.getElementById('cancel-restaurant');
+        if (cancelRestaurantBtn) {
+            cancelRestaurantBtn.addEventListener('click', () => {
+                this.closeRestaurantModal();
+            });
+        }
 
         const closeRestaurantModalBtn = document.getElementById('close-restaurant-modal');
         if (closeRestaurantModalBtn) {

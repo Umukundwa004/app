@@ -23,17 +23,4 @@ Remove-Item Env:DB_SSL -ErrorAction SilentlyContinue
 Write-Host ""
 Write-Host "=== PASSWORD UPDATE COMPLETE ===" -ForegroundColor Green
 Write-Host ""
-Write-Host "New Credentials:" -ForegroundColor Cyan
-Write-Host "  System Admin:" -ForegroundColor White
-Write-Host "    Email: admin@rwandaeats.com" -ForegroundColor Gray
-Write-Host "    Password: RwandaEats@2025!Secure" -ForegroundColor Gray
-Write-Host ""
-Write-Host "  Restaurant Admin:" -ForegroundColor White
-Write-Host "    Email: admin@millecollines.rw" -ForegroundColor Gray
-Write-Host "    Password: MilleCollines@2025!Admin" -ForegroundColor Gray
-Write-Host ""
-Write-Host "  Test Customer:" -ForegroundColor White
-Write-Host "    Email: john@example.com" -ForegroundColor Gray
-Write-Host "    Password: Customer@2025!Secure" -ForegroundColor Gray
-Write-Host ""
-Write-Host "These passwords are secure and won't trigger Chrome's breach warning." -ForegroundColor Green
+Write-Host "Passwords have been updated. Use the password recovery functionality to set new passwords as needed." -ForegroundColor Cyan

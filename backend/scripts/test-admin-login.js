@@ -53,19 +53,12 @@ async function testLogin() {
 
         console.log('\n\n📋 Summary:');
         console.log('=' .repeat(50));
-        console.log('Use these credentials to login:');
-        console.log('\nSystem Admin:');
-        console.log('  Email: admin@rwandaeats.com');
-        console.log('  Password: admin123');
-        console.log('  Redirects to: /admin → system-admin.html');
-        console.log('\nRestaurant Admin:');
-        console.log('  Email: admin@millecollines.rw');
-        console.log('  Password: restaurant123');
-        console.log('  Redirects to: /admin → restaurant-admin.html');
-        console.log('\nCustomer:');
-        console.log('  Email: john@example.com');
-        console.log('  Password: customer123');
-        console.log('  Redirects to: / → customer.html');
+        console.log('Login functionality is working correctly.');
+        console.log('\nAccount Types:');
+        console.log('  System Admin → /admin → system-admin.html');
+        console.log('  Restaurant Admin → /admin → restaurant-admin.html');
+        console.log('  Customer → / → customer.html');
+        console.log('\nUse the password recovery functionality to set secure passwords.');
         console.log('=' .repeat(50));
 
     } catch (error) {

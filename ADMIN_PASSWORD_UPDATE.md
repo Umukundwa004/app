@@ -2,21 +2,11 @@
 
 ## ✅ COMPLETED - Local Database Passwords Updated
 
-Your local MySQL database passwords have been updated to secure values that won't trigger Chrome's breach warning.
+Your local MySQL database passwords have been updated to secure values.
 
-### New Login Credentials (Local Database)
+### Login Credentials
 
-**System Admin:**
-- Email: `admin@rwandaeats.com`
-- Password: `RwandaEats@2025!Secure`
-
-**Restaurant Admin:**
-- Email: `admin@millecollines.rw`  
-- Password: `MilleCollines@2025!Admin`
-
-**Test Customer:**
-- Email: `john@example.com`
-- Password: `Customer@2025!Secure`
+Use the secure passwords that were set during database initialization. If you need to reset passwords, use the password recovery functionality in the application.
 
 ---
 
@@ -39,24 +29,7 @@ node backend/scripts/update-secure-passwords.js
 
 1. Go to TiDB Cloud Console
 2. Connect to your database using SQL Editor
-3. Run these SQL commands:
-
-```sql
--- Update system admin
-UPDATE users 
-SET password_hash = '<hash-from-script>' 
-WHERE email = 'admin@rwandaeats.com';
-
--- Update restaurant admin  
-UPDATE users 
-SET password_hash = '<hash-from-script>' 
-WHERE email = 'admin@millecollines.rw';
-
--- Update test customer
-UPDATE users 
-SET password_hash = '<hash-from-script>' 
-WHERE email = 'john@example.com';
-```
+3. Run password update SQL commands for your specific user accounts
 
 ### Option 3: Re-import with Updated Passwords
 

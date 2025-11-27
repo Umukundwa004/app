@@ -1,10 +1,11 @@
 # test-add-user.ps1
+# NOTE: Update these credentials to match your actual admin credentials
 
 # --- Configuration ---
 $baseUrl = "http://localhost:3000"
 $adminCreds = @{
-    email    = "admin@rwandaeats.com"
-    password = "admin123"
+    email    = "your-admin@example.com"  # Update this
+    password = "your-secure-password"     # Update this
 }
 
 # Generate unique data for the new user

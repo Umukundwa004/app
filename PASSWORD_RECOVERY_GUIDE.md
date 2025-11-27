@@ -74,12 +74,12 @@ Features:
 **Request Body**:
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "SecurePass123",
+  "name": "Your Name",
+  "email": "user@example.com",
+  "password": "YourSecurePassword123",
   "phone": "0781234567",
   "user_type": "customer",
-  "recovery_code": "1234"
+  "recovery_code": "your-4-digit-code"
 }
 ```
 
@@ -89,8 +89,8 @@ Features:
   "message": "Registration successful",
   "user": {
     "id": 15,
-    "name": "John Doe",
-    "email": "john@example.com",
+    "name": "Your Name",
+    "email": "user@example.com",
     "user_type": "customer"
   }
 }
@@ -109,9 +109,9 @@ Features:
 **Request Body**:
 ```json
 {
-  "email": "john@example.com",
-  "recovery_code": "1234",
-  "new_password": "NewSecurePass@2025"
+  "email": "user@example.com",
+  "recovery_code": "your-code",
+  "new_password": "YourNewSecurePassword@2025"
 }
 ```
 
@@ -120,8 +120,8 @@ Features:
 {
   "message": "Password reset successful",
   "user": {
-    "name": "John Doe",
-    "email": "john@example.com"
+    "name": "Your Name",
+    "email": "user@example.com"
   }
 }
 ```

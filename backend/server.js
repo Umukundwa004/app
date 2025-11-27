@@ -2820,73 +2820,6 @@ END RESTAURANT DETAILS MANAGEMENT API
 // Export the app for serverless platforms like Vercel
 module.exports = app;
 
-// User Registration (FR 3.1)
-app.post('/api/auth/register', async (req, res) => {
-    try {
-        const { name, email, password, phone, user_type = 'customer' } = req.body;
-
-        // Validate input
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: 'Name, email, and password are required' });
-        }
-
-        // Validate email format
-        if (!isValidEmail(email)) {
-            return res.status(400).json({ error: 'Invalid email format' });
-        }
-
-        // Check if user already exists
-        const [existingUsers] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
-        if (existingUsers.length > 0) {
-            return res.status(400).json({ error: 'User with this email already exists' });
-        }
-
-        // Hash password
-        const passwordHash = await hashPassword(password);
-        const verificationToken = generateToken();
-
-        // Create user
-        const [result] = await db.execute(
-            'INSERT INTO users (name, email, password_hash, phone, user_type, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
-            [name, email, passwordHash, phone, user_type, verificationToken]
-        );
-
-        const userId = result.insertId;
-
-        // Create session
-        req.session.user = {
-            id: userId,
-            name: name,
-            email: email,
-            user_type: user_type
-        };
-
-        // Send welcome email with verification (don't let email failures break registration)
-        try {
-            const user = { id: userId, name, email, phone, verification_token: verificationToken };
-            await NotificationService.sendWelcomeEmail(user);
-        } catch (emailError) {
-            console.error('Failed to send welcome email, but registration succeeded:', emailError);
-        }
-
-        // Log the action
-        try {
-            await AuditLogService.logAction(userId, 'USER_REGISTER', 'user', userId, { email, user_type }, req);
-        } catch (logError) {
-            console.error('Failed to log action, but registration succeeded:', logError);
-        }
-
-        res.json({ 
-            message: 'Registration successful. Please check your email for verification.', 
-            user: req.session.user 
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ error: 'Internal server error', details: error.message });
-    }
-});
-
 // Serve static pages
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'customer.html'));
@@ -3038,6 +2971,20 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
     try {
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count } = req.body;
         
+        // Check if Cloudinary is configured when files are uploaded
+        if ((req.files && Object.keys(req.files).length > 0) && !process.env.CLOUDINARY_CLOUD_NAME) {
+            return res.status(500).json({ 
+                error: 'File upload service not configured. Please contact the administrator.',
+                details: 'Cloudinary credentials are missing'
+            });
+        }
+        
+        // Check for duplicate restaurant name within this admin's restaurants
+        const [existingRestaurant] = await db.execute('SELECT id FROM restaurants WHERE name = ? AND restaurant_admin_id = ?', [name, req.session.user.id]);
+        if (existingRestaurant.length > 0) {
+            return res.status(400).json({ error: 'You already have a restaurant with this name' });
+        }
+        
         let video_url = null;
         let menu_pdf_url = null;
         
@@ -3101,6 +3048,12 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
         
         if (ownership.length === 0) {
             return res.status(403).json({ error: 'Permission denied' });
+        }
+        
+        // Check for duplicate restaurant name within this admin's restaurants (excluding current restaurant)
+        const [existingRestaurant] = await db.execute('SELECT id FROM restaurants WHERE name = ? AND restaurant_admin_id = ? AND id != ?', [name, req.session.user.id, req.params.id]);
+        if (existingRestaurant.length > 0) {
+            return res.status(400).json({ error: 'You already have a restaurant with this name' });
         }
         
         let updateQuery = `UPDATE restaurants SET name = ?, description = ?, location = ?, contact_phone = ?, 
@@ -3888,6 +3841,13 @@ app.post('/api/system-admin/restaurants', requireSystemAdmin, upload.fields([{ n
         
         console.log('Creating restaurant with data:', { name, admin_email, admin_name, create_new_admin });
         
+        // Check for duplicate restaurant name
+        const [existingRestaurant] = await connection.execute('SELECT id FROM restaurants WHERE name = ?', [name]);
+        if (existingRestaurant.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'A restaurant with this name already exists' });
+        }
+        
         let adminId;
         
         // This logic assumes if an admin email is provided, we're creating a new admin.
@@ -4000,6 +3960,15 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
         console.log('Update restaurant files:', req.files);
         
         const { name, description, location, contact_phone, contact_email, opening_time, closing_time, cuisine_type, price_range, tables_count, restaurant_admin_id, operating_hours, menu } = req.body;
+        
+        // Check for duplicate restaurant name (excluding current restaurant)
+        if (name !== undefined && name !== '') {
+            const [existingRestaurant] = await connection.execute('SELECT id FROM restaurants WHERE name = ? AND id != ?', [name, req.params.id]);
+            if (existingRestaurant.length > 0) {
+                await connection.rollback();
+                return res.status(400).json({ error: 'A restaurant with this name already exists' });
+            }
+        }
         
         // Build dynamic update query based on provided fields
         let updateFields = [];

@@ -30,10 +30,8 @@ echo [3/3] Starting server...
 echo.
 echo Server will start on http://localhost:3000
 echo.
-echo Test Accounts:
-echo - Admin: admin@rwandaeats.com / admin123
-echo - Restaurant: admin@millecollines.rw / restaurant123
-echo - Customer: john@example.com / customer123
+echo Test accounts have been created during database setup.
+echo Use password reset if you need to recover your account.
 echo.
 echo Press Ctrl+C to stop the server
 echo.
