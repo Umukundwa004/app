@@ -3509,16 +3509,12 @@ app.post('/api/table-availability', requireRestaurantAdmin, async (req, res) => 
             return res.status(403).json({ error: 'Permission denied' });
         }
         
-        // Delete existing availability for the date
-        await db.execute(
-            'DELETE FROM table_availability WHERE restaurant_id = ? AND date = ?',
-            [restaurant_id, date]
-        );
-        
-        // Insert new availability
+        // Upsert availability per slot to avoid unique key conflicts
         for (const slot of availability) {
             await db.execute(
-                'INSERT INTO table_availability (restaurant_id, date, time_slot, available_tables) VALUES (?, ?, ?, ?)',
+                `INSERT INTO table_availability (restaurant_id, date, time_slot, available_tables)
+                 VALUES (?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE available_tables = VALUES(available_tables)`,
                 [restaurant_id, date, slot.time_slot, slot.available_tables]
             );
         }

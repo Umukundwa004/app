@@ -30,7 +30,7 @@ class RestaurantAdmin {
 
     async checkAuth() {
         try {
-            const response = await fetch('/api/user');
+            const response = await fetch('/api/user', { credentials: 'include' });
             if (!response.ok) throw new Error('Not authenticated');
             
             const data = await response.json();
@@ -680,7 +680,8 @@ class RestaurantAdmin {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ status })
+                body: JSON.stringify({ status }),
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -701,7 +702,7 @@ class RestaurantAdmin {
 
     async loadMyRestaurants() {
         try {
-            const response = await fetch('/api/restaurant-admin/restaurants');
+            const response = await fetch('/api/restaurant-admin/restaurants', { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to load restaurants');
             
             this.restaurants = await response.json();
@@ -889,7 +890,8 @@ class RestaurantAdmin {
         try {
             const response = await fetch(url, {
                 method: method,
-                body: formData  // No Content-Type header - browser sets it automatically with boundary
+                body: formData, // No Content-Type header - browser sets it automatically with boundary
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -914,7 +916,8 @@ class RestaurantAdmin {
                     await fetch('/api/system-admin/restaurants', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(sysPayload)
+                        body: JSON.stringify(sysPayload),
+                        credentials: 'include'
                     });
                 } catch (e) {
                     // ignore system-admin sync errors
@@ -945,7 +948,7 @@ class RestaurantAdmin {
 
     async loadMenuItems(restaurantId) {
         try {
-            const response = await fetch(`/api/restaurants/${restaurantId}/menu`);
+            const response = await fetch(`/api/restaurants/${restaurantId}/menu`, { credentials: 'include' });
             if (!response.ok) throw new Error('Failed to load menu items');
             
             this.menuItems = await response.json();
@@ -2507,9 +2510,15 @@ class RestaurantAdmin {
     async updateNotificationBadge(count = null) {
         if (count === null) {
             try {
-                const response = await fetch('/api/notifications');
-                const notifications = await response.json();
-                count = notifications.filter(n => !n.is_read).length;
+                const response = await fetch('/api/notifications', { credentials: 'include' });
+                if (!response.ok) {
+                    // If unauthorized or forbidden, treat as zero notifications
+                    console.warn('Notifications fetch not authorized:', response.status);
+                    count = 0;
+                } else {
+                    const notifications = await response.json();
+                    count = Array.isArray(notifications) ? notifications.filter(n => !n.is_read).length : 0;
+                }
             } catch (error) {
                 console.error('Error fetching notifications:', error);
                 return;
