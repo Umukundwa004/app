@@ -12,7 +12,7 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const axios = require('axios');
-const SibApiV3Sdk = require('sib-api-v3-sdk');
+// const SibApiV3Sdk = require('sib-api-v3-sdk'); // Brevo removed
 const multer = require('multer');
 const fs = require('fs');
 
@@ -90,8 +90,9 @@ if (process.env.MAILERSEND_API_KEY) {
     console.log('MailerSend API key not found. Email functionality will be limited.');
 }
 
-// Brevo (Sendinblue) Email configuration
-let brevoClient;
+// Brevo (Sendinblue) Email configuration - REMOVED
+let brevoClient = null;
+/*
 if (process.env.BREVO_API_KEY) {
     const defaultClient = SibApiV3Sdk.ApiClient.instance;
     const apiKey = defaultClient.authentications['api-key'];
@@ -105,6 +106,7 @@ if (process.env.BREVO_API_KEY) {
 } else {
     console.log('Brevo API key not found.');
 }
+*/
 
 // Email verification service using MailerSend API
 class EmailVerificationService {
@@ -292,38 +294,10 @@ const isAuthenticated = (req, res, next) => {
 
 // Enhanced Email Service with comprehensive error handling and logging
 class EmailService {
-    // Send transactional emails using Brevo (preferred) or MailerSend (fallback)
+    // Send transactional emails using MailerSend (Brevo removed)
     static async sendEmail(to, subject, html) {
         const MAX_RETRIES = 2;
         let lastError = null;
-
-        // Try Brevo first
-        if (brevoClient && process.env.BREVO_API_KEY) {
-            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-                try {
-                    const sendSmtpEmail = {
-                        sender: {
-                            name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
-                            email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
-                        },
-                        to: [{ email: to }],
-                        subject: subject,
-                        htmlContent: html
-                    };
-
-                    const response = await brevoClient.transactionalEmailApi.sendTransacEmail(sendSmtpEmail);
-                    console.log(`✅ [BREVO EMAIL SENT] To: ${to}, Subject: ${subject}, MessageID: ${response.messageId}`);
-                    return { success: true, provider: 'brevo', messageId: response.messageId };
-                } catch (error) {
-                    lastError = error;
-                    console.error(`⚠️ [BREVO ATTEMPT ${attempt + 1}/${MAX_RETRIES + 1}] Failed:`, error.message);
-                    
-                    if (attempt < MAX_RETRIES) {
-                        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
-                    }
-                }
-            }
-        }
 
         // Fallback to MailerSend
         if (mailerSend && process.env.MAILERSEND_API_KEY) {
@@ -368,33 +342,10 @@ class EmailService {
         };
     }
 
-    // Create and send email campaigns using Brevo
+    // Create and send email campaigns using Brevo - REMOVED
     static async createEmailCampaign(campaignData) {
-        if (!brevoClient) {
-            throw new Error('Brevo not configured for campaigns');
-        }
-
-        try {
-            const emailCampaign = {
-                name: campaignData.name || 'Rwanda Eats Campaign',
-                subject: campaignData.subject,
-                sender: {
-                    name: process.env.BREVO_FROM_NAME || 'Rwanda Eats Reserve',
-                    email: process.env.BREVO_FROM_EMAIL || 'noreply@rwandaeats.com'
-                },
-                type: 'classic',
-                htmlContent: campaignData.htmlContent,
-                recipients: campaignData.recipients || { listIds: [] },
-                scheduledAt: campaignData.scheduledAt || null
-            };
-
-            const response = await brevoClient.campaignsApi.createEmailCampaign(emailCampaign);
-            console.log(`✅ [BREVO CAMPAIGN CREATED] ID: ${response.id}, Name: ${campaignData.name}`);
-            return response;
-        } catch (error) {
-            console.error('❌ [CAMPAIGN CREATION ERROR]:', error.message);
-            throw error;
-        }
+        console.log('Brevo campaigns removed');
+        return null;
     }
 
     // Test email configuration
@@ -404,7 +355,8 @@ class EmailService {
             mailersend: { configured: false, working: false }
         };
 
-        // Test Brevo
+        // Test Brevo - REMOVED
+        /*
         if (brevoClient && process.env.BREVO_API_KEY) {
             results.brevo.configured = true;
             try {
@@ -415,6 +367,7 @@ class EmailService {
                 console.error('❌ Brevo configuration failed:', error.message);
             }
         }
+        */
 
         // Test MailerSend (basic check)
         if (mailerSend && process.env.MAILERSEND_API_KEY) {
@@ -656,43 +609,61 @@ class NotificationService {
     }
 
     static async sendWelcomeEmail(user) {
-        const verificationUrl = `http://localhost:3000/verify-email?token=${user.verification_token}`;
-        const emailHtml = emailTemplates.welcome(user.name, verificationUrl);
-        
-        const result = await this.sendEmail(user.email, 'Welcome to Rwanda Eats Reserve! 🎉', emailHtml);
-        return result.success || false; // Return boolean for backward compatibility
+        try {
+            const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email?token=${user.verification_token}`;
+            const emailHtml = emailTemplates.welcome(user.name, verificationUrl);
+            
+            const result = await EmailService.sendEmail(user.email, 'Welcome to Rwanda Eats Reserve! 🎉', emailHtml);
+            console.log('Welcome email result:', result);
+            return result.success || false;
+        } catch (error) {
+            console.error('Error sending welcome email:', error);
+            return false; // Don't throw, just return false
+        }
     }
 
     static async sendReservationConfirmation(reservation, user, restaurant) {
-        const emailHtml = emailTemplates.reservationConfirmation(
-            user.name,
-            restaurant.name,
-            new Date(reservation.reservation_date).toLocaleDateString(),
-            reservation.reservation_time,
-            reservation.party_size,
-            restaurant.location
-        );
+        try {
+            const emailHtml = emailTemplates.reservationConfirmation(
+                user.name,
+                restaurant.name,
+                new Date(reservation.reservation_date).toLocaleDateString(),
+                reservation.reservation_time,
+                reservation.party_size,
+                restaurant.location
+            );
 
-        const emailResult = await this.sendEmail(
-            user.email, 
-            `Reservation Confirmed at ${restaurant.name}`, 
-            emailHtml
-        );
-        
-        // Also send SMS if user has phone
-        if (user.phone) {
-            const smsMessage = `🎉 Reservation confirmed! ${restaurant.name} on ${new Date(reservation.reservation_date).toLocaleDateString()} at ${reservation.reservation_time} for ${reservation.party_size} guests. See you there!`;
-            await this.sendSMS(user.phone, smsMessage);
+            const emailResult = await EmailService.sendEmail(
+                user.email, 
+                `Reservation Confirmed at ${restaurant.name}`, 
+                emailHtml
+            );
+            
+            // Also send SMS if user has phone
+            if (user.phone) {
+                const smsMessage = `🎉 Reservation confirmed! ${restaurant.name} on ${new Date(reservation.reservation_date).toLocaleDateString()} at ${reservation.reservation_time} for ${reservation.party_size} guests. See you there!`;
+                await this.sendSMS(user.phone, smsMessage);
+            }
+
+            console.log('Reservation confirmation email result:', emailResult);
+            return emailResult.success || false;
+        } catch (error) {
+            console.error('Error sending reservation confirmation:', error);
+            return false; // Don't throw, just return false
         }
-
-        return emailResult.success || false; // Return boolean for backward compatibility
     }
 
     static async sendPasswordResetEmail(user, resetCode) {
-        const emailHtml = emailTemplates.passwordReset(user.name, resetCode);
-        
-        const result = await this.sendEmail(user.email, 'Password Reset Code - Rwanda Eats Reserve', emailHtml);
-        return result.success || false; // Return boolean for backward compatibility
+        try {
+            const emailHtml = emailTemplates.passwordReset(user.name, resetCode);
+            
+            const result = await EmailService.sendEmail(user.email, 'Password Reset Code - Rwanda Eats Reserve', emailHtml);
+            console.log('Password reset email result:', result);
+            return result.success || false;
+        } catch (error) {
+            console.error('Error sending password reset email:', error);
+            return false; // Don't throw, just return false
+        }
     }
 
     static async getEmailTemplate(name) {
@@ -1152,7 +1123,7 @@ app.post('/api/email/campaign', requireAuth, async (req, res) => {
     }
 });
 
-// Send test email
+// Send test email - Simplified (no Brevo dependency)
 app.post('/api/email/test', requireAuth, async (req, res) => {
     try {
         const { to, subject, content } = req.body;
@@ -1161,12 +1132,12 @@ app.post('/api/email/test', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'To, subject, and content are required' });
         }
 
-        const success = await EmailService.sendEmail(to, subject, content);
+        const result = await EmailService.sendEmail(to, subject, content);
 
-        if (success) {
-            res.json({ message: 'Test email sent successfully' });
+        if (result.success) {
+            res.json({ message: 'Test email sent successfully', provider: result.provider });
         } else {
-            res.status(500).json({ error: 'Failed to send test email' });
+            res.status(500).json({ error: 'Failed to send test email', details: result.error });
         }
     } catch (error) {
         console.error('Test email error:', error);
@@ -2598,10 +2569,6 @@ END RESTAURANT DETAILS MANAGEMENT API
 
 // Export the app for serverless platforms like Vercel
 module.exports = app;
-// Add this route to serve the registration page
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'register.html'));
-});
 
 // User Registration (FR 3.1)
 app.post('/api/auth/register', async (req, res) => {
@@ -2644,12 +2611,20 @@ app.post('/api/auth/register', async (req, res) => {
             user_type: user_type
         };
 
-        // Send welcome email with verification
-        const user = { id: userId, name, email, phone, verification_token: verificationToken };
-        await NotificationService.sendWelcomeEmail(user);
+        // Send welcome email with verification (don't let email failures break registration)
+        try {
+            const user = { id: userId, name, email, phone, verification_token: verificationToken };
+            await NotificationService.sendWelcomeEmail(user);
+        } catch (emailError) {
+            console.error('Failed to send welcome email, but registration succeeded:', emailError);
+        }
 
         // Log the action
-        await AuditLogService.logAction(userId, 'USER_REGISTER', 'user', userId, { email, user_type }, req);
+        try {
+            await AuditLogService.logAction(userId, 'USER_REGISTER', 'user', userId, { email, user_type }, req);
+        } catch (logError) {
+            console.error('Failed to log action, but registration succeeded:', logError);
+        }
 
         res.json({ 
             message: 'Registration successful. Please check your email for verification.', 
@@ -2657,7 +2632,8 @@ app.post('/api/auth/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
 
@@ -4279,7 +4255,7 @@ Usage Examples:
     try {
         const emailResults = await EmailService.testConfiguration();
         console.log('📧 Email Service Status:');
-        console.log(`   Brevo: ${emailResults.brevo.configured ? (emailResults.brevo.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
+        // console.log(`   Brevo: ${emailResults.brevo.configured ? (emailResults.brevo.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
         console.log(`   MailerSend: ${emailResults.mailersend.configured ? (emailResults.mailersend.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
     } catch (error) {
         console.error('⚠️ Email service test failed:', error.message);
