@@ -133,6 +133,31 @@ class EmailVerificationService {
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// CORS configuration for production
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        const allowedOrigins = [
+            'https://app-1btz.onrender.com',
+            process.env.BASE_URL
+        ].filter(Boolean);
+        
+        const origin = req.headers.origin;
+        if (allowedOrigins.includes(origin)) {
+            res.header('Access-Control-Allow-Origin', origin);
+        }
+        
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        
+        if (req.method === 'OPTIONS') {
+            return res.sendStatus(200);
+        }
+        next();
+    });
+}
+
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 app.use('/views', express.static(path.join(__dirname, '..', 'frontend', 'views'))); // Serve views folder for images
 
@@ -176,10 +201,12 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false, // Temporarily set to false for debugging
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        httpOnly: true
-    }
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Allow cross-site in production
+    },
+    proxy: process.env.NODE_ENV === 'production' // Trust proxy in production
 }));
 
 // Database connection pool (adjusted for serverless compatibility)
@@ -860,33 +887,57 @@ app.post('/api/auth/verify-email-token', async (req, res) => {
 // User Login
 app.post('/api/auth/login', async (req, res) => {
     try {
+        console.log('🔐 Login attempt for:', req.body.email);
+        
         const { email, password } = req.body;
 
         if (!email || !password) {
+            console.log('❌ Missing email or password');
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
+        console.log('📊 Querying database for user...');
+        
         // Get user with password hash
-        const [users] = await db.execute(
-            'SELECT id, name, email, password_hash, user_type, email_verified, account_locked, login_attempts FROM users WHERE email = ?',
-            [email]
-        );
+        let users;
+        try {
+            [users] = await db.execute(
+                'SELECT id, name, email, password_hash, user_type, email_verified, account_locked, login_attempts FROM users WHERE email = ?',
+                [email]
+            );
+        } catch (dbError) {
+            console.error('❌ Database query failed:', dbError);
+            console.error('DB Error Code:', dbError.code);
+            console.error('DB Error Message:', dbError.message);
+            return res.status(503).json({ error: 'Database connection error. Please try again later.' });
+        }
 
-        if (users.length === 0) {
+        if (!users || users.length === 0) {
+            console.log('❌ User not found:', email);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const user = users[0];
+        console.log('✅ User found:', user.email, 'Type:', user.user_type);
 
         // Check if account is locked
         if (user.account_locked) {
+            console.log('🔒 Account is locked:', email);
             return res.status(423).json({ error: 'Account is locked. Please contact support or reset your password.' });
         }
 
         // Verify password
-        const isValidPassword = await verifyPassword(password, user.password_hash);
+        console.log('🔑 Verifying password...');
+        let isValidPassword;
+        try {
+            isValidPassword = await verifyPassword(password, user.password_hash);
+        } catch (hashError) {
+            console.error('❌ Password verification failed:', hashError);
+            return res.status(500).json({ error: 'Authentication error. Please try again.' });
+        }
         
         if (!isValidPassword) {
+            console.log('❌ Invalid password for:', email);
             // Increment login attempts
             const newAttempts = (user.login_attempts || 0) + 1;
             const lockAccount = newAttempts >= 5;
@@ -897,7 +948,8 @@ app.post('/api/auth/login', async (req, res) => {
                     [newAttempts, lockAccount, user.id]
                 );
             } catch (updateError) {
-                console.error('Failed to update login attempts:', updateError);
+                console.error('⚠️ Failed to update login attempts:', updateError);
+                // Don't fail the login attempt just because we couldn't update attempts
             }
 
             return res.status(401).json({ 
@@ -907,6 +959,8 @@ app.post('/api/auth/login', async (req, res) => {
             });
         }
 
+        console.log('✅ Password verified for:', email);
+
         // Reset login attempts on successful login
         try {
             await db.execute(
@@ -914,7 +968,8 @@ app.post('/api/auth/login', async (req, res) => {
                 [user.id]
             );
         } catch (updateError) {
-            console.error('Failed to reset login attempts:', updateError);
+            console.error('⚠️ Failed to reset login attempts:', updateError);
+            // Don't fail login just because we couldn't reset attempts
         }
 
         // Create session
@@ -925,19 +980,31 @@ app.post('/api/auth/login', async (req, res) => {
             user_type: user.user_type
         };
 
+        console.log('✅ Session created for:', email);
+
         // Generate JWT token for API access
-        const token = jwt.sign(
-            { userId: user.id, email: user.email, userType: user.user_type },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        let token;
+        try {
+            token = jwt.sign(
+                { userId: user.id, email: user.email, userType: user.user_type },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+        } catch (jwtError) {
+            console.error('⚠️ JWT generation failed:', jwtError);
+            // Continue without token - session is enough
+            token = null;
+        }
 
         // Log the action (don't let logging failures break login)
         try {
             await AuditLogService.logAction(user.id, 'USER_LOGIN', 'user', user.id, { email }, req);
         } catch (logError) {
-            console.error('Failed to log login action, but login succeeded:', logError);
+            console.error('⚠️ Failed to log login action:', logError);
+            // Continue - logging failure shouldn't break login
         }
+
+        console.log('🎉 Login successful for:', email);
 
         res.json({ 
             message: 'Login successful', 
@@ -945,10 +1012,14 @@ app.post('/api/auth/login', async (req, res) => {
             token: token
         });
     } catch (error) {
-        console.error('Login error:', error);
-        console.error('Login error stack:', error.stack);
-        console.error('Login error code:', error.code);
-        res.status(500).json({ error: 'Internal server error. Please try again later.', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
+        console.error('❌ Login error:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Error code:', error.code);
+        console.error('Error name:', error.name);
+        res.status(500).json({ 
+            error: 'Internal server error. Please try again later.', 
+            details: process.env.NODE_ENV === 'development' ? error.message : 'Login failed unexpectedly'
+        });
     }
 });
 
