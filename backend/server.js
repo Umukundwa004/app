@@ -4005,21 +4005,22 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
             updateParams.push(menu_pdf_url);
         }
 
-        // Support updating menu text and operating hours
+        // Support updating menu text (temporarily disable operating_hours updates)
         if (menu !== undefined) {
             updateFields.push('menu = ?');
             updateParams.push(menu || null);
         }
-        if (operating_hours !== undefined && operating_hours !== '') {
-            updateFields.push('operating_hours = ?');
-            try {
-                const hoursValue = operating_hours ? (typeof operating_hours === 'string' ? operating_hours : JSON.stringify(operating_hours)) : null;
-                updateParams.push(hoursValue);
-            } catch (e) {
-                console.error('Error processing operating_hours:', e);
-                updateParams.push(null);
-            }
-        }
+        // operating_hours temporarily disabled to avoid DB errors while column is missing
+        // if (operating_hours !== undefined && operating_hours !== '') {
+        //     updateFields.push('operating_hours = ?');
+        //     try {
+        //         const hoursValue = operating_hours ? (typeof operating_hours === 'string' ? operating_hours : JSON.stringify(operating_hours)) : null;
+        //         updateParams.push(hoursValue);
+        //     } catch (e) {
+        //         console.error('Error processing operating_hours:', e);
+        //         updateParams.push(null);
+        //     }
+        // }
         
         // Execute main restaurant update if there are fields to update
         if (updateFields.length > 0) {

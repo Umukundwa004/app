@@ -28,6 +28,12 @@ async function checkUsers() {
     );
     console.log('\nTable users altered: recovery_code column added.');
 
+    // Alter restaurants table to add operating_hours column
+    await db.execute(
+        'ALTER TABLE restaurants ADD COLUMN operating_hours JSON NULL AFTER closing_time'
+    );
+    console.log('Table restaurants altered: operating_hours column added.');
+
     await db.end();
 }
 
