@@ -904,20 +904,29 @@ app.post('/api/auth/register', async (req, res) => {
             user_type: user_type
         };
 
-        // Send welcome email with verification
+        // Send welcome email with verification (do not fail registration if email fails)
         const user = { id: userId, name, email, phone, verification_token: verificationToken };
-        await NotificationService.sendWelcomeEmail(user);
+        try {
+            await NotificationService.sendWelcomeEmail(user);
+        } catch (mailErr) {
+            console.error('Welcome email failed:', mailErr?.message || mailErr);
+        }
 
-        // Log the action
-        await AuditLogService.logAction(userId, 'USER_REGISTER', 'user', userId, { email, user_type }, req);
+        // Log the action (non-blocking)
+        try {
+            await AuditLogService.logAction(userId, 'USER_REGISTER', 'user', userId, { email, user_type }, req);
+        } catch (auditErr) {
+            console.error('Audit log failed:', auditErr?.message || auditErr);
+        }
 
         res.json({ 
             message: 'Registration successful. Please check your email for verification.', 
             user: req.session.user 
         });
     } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Registration error:', error?.stack || error);
+        const message = error?.message || 'Internal server error';
+        res.status(500).json({ error: message });
     }
 });
 

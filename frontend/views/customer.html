@@ -265,21 +265,33 @@
           <h2 class="text-2xl md:text-3xl font-bold text-center mb-2 text-gray-900">My Reservations</h2>
           <p class="text-center text-sm md:text-base text-gray-600 mb-6 md:mb-8">Manage your upcoming and past reservations</p>
                     
-          <!-- Reservation Tabs -->
-          <div class="bg-white rounded-lg shadow-md mb-6 overflow-x-auto">
-            <div class="border-b border-gray-200">
-              <nav class="flex -mb-px min-w-max">
-                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-brown-600 font-medium text-gray-600 whitespace-nowrap" data-tab="upcoming">
-                  <i class="fas fa-clock mr-1 md:mr-2"></i>Upcoming
-                </button>
-                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap" data-tab="past">
-                  <i class="fas fa-history mr-1 md:mr-2"></i>Past Reservations
-                </button>
-                <button class="reservation-tab py-3 md:py-4 px-4 md:px-6 text-xs md:text-base text-center border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-600 whitespace-nowrap" data-tab="cancelled">
-                  <i class="fas fa-times-circle mr-1 md:mr-2"></i>Cancelled
-                </button>
-              </nav>
-            </div>
+          <!-- Reservation Tabs (Improved UI) -->
+          <div class="w-full bg-white rounded-xl shadow-sm border mb-6 overflow-x-auto">
+            <nav class="flex min-w-max border-b">
+              <!-- Upcoming Tab -->
+              <button class="reservation-tab px-6 py-3 border-b-2 border-brown-600 text-brown-700 font-medium text-sm" data-tab="upcoming">
+                <span class="inline-flex items-center gap-2">
+                  <i class="fas fa-clock w-4 h-4"></i>
+                  Upcoming
+                </span>
+              </button>
+
+              <!-- Past Reservations Tab -->
+              <button class="reservation-tab px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 text-sm" data-tab="past">
+                <span class="inline-flex items-center gap-2">
+                  <i class="fas fa-history w-4 h-4"></i>
+                  Past Reservations
+                </span>
+              </button>
+
+              <!-- Cancelled Tab -->
+              <button class="reservation-tab px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 text-sm" data-tab="cancelled">
+                <span class="inline-flex items-center gap-2">
+                  <i class="fas fa-times-circle w-4 h-4"></i>
+                  Cancelled
+                </span>
+              </button>
+            </nav>
           </div>
                     
           <!-- Reservations Content -->
