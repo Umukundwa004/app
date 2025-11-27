@@ -7,6 +7,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const path = require('path');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const axios = require('axios');
 const SibApiV3Sdk = require('sib-api-v3-sdk');
@@ -20,20 +23,35 @@ const PORT = process.env.PORT || 9000;
 const JWT_SECRET = process.env.JWT_SECRET || 'rwanda-eats-reserve-secret-key';
 const BCRYPT_ROUNDS = 12;
 
-// Multer configuration for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '..', 'frontend', 'public', 'uploads', 'restaurants');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+// Configure Cloudinary
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+    console.log('Cloudinary configured successfully');
+} else {
+    console.warn('⚠️  Cloudinary not configured. File uploads will fail in production.');
+    console.warn('   Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET');
+}
+
+// Cloudinary storage for file uploads
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'rwanda-eats-restaurants',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 1200, height: 800, crop: 'fill', quality: 'auto' }],
+        public_id: (req, file) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            return file.fieldname + '-' + uniqueSuffix;
         }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
+
+// Fallback to memory storage if Cloudinary not configured (development only)
+const fallbackStorage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
     if (file.fieldname === 'image' || file.fieldname === 'images') {
@@ -54,7 +72,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-    storage: storage,
+    storage: process.env.CLOUDINARY_CLOUD_NAME ? storage : fallbackStorage,
     fileFilter: fileFilter,
     limits: {
         fileSize: 50 * 1024 * 1024 // 50MB max file size
@@ -126,11 +144,39 @@ app.get('/service-worker.js', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'service-worker.js'));
 });
 
+// MySQL Session Store Configuration
+const sessionStore = new MySQLStore({
+    host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+    user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
+    password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
+    database: process.env.DB_NAME || 'rwanda_eats_reserve',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    clearExpired: true,
+    checkExpirationInterval: 900000, // Check every 15 minutes
+    expiration: 24 * 60 * 60 * 1000, // 24 hours
+    createDatabaseTable: true,
+    schema: {
+        tableName: 'sessions',
+        columnNames: {
+            session_id: 'session_id',
+            expires: 'expires',
+            data: 'data'
+        }
+    }
+});
+
 app.use(session({
-    secret: 'rwanda-eats-reserve-session-secret',
+    key: 'rwanda_eats_session',
+    secret: process.env.SESSION_SECRET || 'rwanda-eats-reserve-session-secret',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true
+    }
 }));
 
 // Database connection pool (adjusted for serverless compatibility)
