@@ -45,6 +45,17 @@ async function checkUsers() {
     );
     console.log('Table restaurants altered: operating_hours column added.');
 
+    // Check if operating_hours column exists
+    const [restaurantColumns] = await db.execute(
+        "SHOW COLUMNS FROM restaurants LIKE 'operating_hours'"
+    );
+
+    if (restaurantColumns.length > 0) {
+        console.log("operating_hours column exists in restaurants table.");
+    } else {
+        console.log("operating_hours column does not exist in restaurants table.");
+    }
+
     await db.end();
 }
 
