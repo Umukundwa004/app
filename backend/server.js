@@ -98,7 +98,8 @@ if (process.env.BREVO_API_KEY) {
     apiKey.apiKey = process.env.BREVO_API_KEY;
     brevoClient = {
         transactionalEmailApi: new SibApiV3Sdk.TransactionalEmailsApi(),
-        campaignsApi: new SibApiV3Sdk.EmailCampaignsApi()
+        campaignsApi: new SibApiV3Sdk.EmailCampaignsApi(),
+        accountApi: new SibApiV3Sdk.AccountApi()
     };
     console.log('Brevo configured successfully');
 } else {
@@ -144,36 +145,36 @@ app.get('/service-worker.js', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'service-worker.js'));
 });
 
-// MySQL Session Store Configuration
-const sessionStore = new MySQLStore({
-    host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
-    password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
-    database: process.env.DB_NAME || 'rwanda_eats_reserve',
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
-    clearExpired: true,
-    checkExpirationInterval: 900000, // Check every 15 minutes
-    expiration: 24 * 60 * 60 * 1000, // 24 hours
-    createDatabaseTable: true,
-    schema: {
-        tableName: 'sessions',
-        columnNames: {
-            session_id: 'session_id',
-            expires: 'expires',
-            data: 'data'
-        }
-    }
-});
+// MySQL Session Store Configuration (temporarily disabled for debugging)
+// const sessionStore = new MySQLStore({
+//     host: process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
+//     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+//     user: process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
+//     password: process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'vestine004'),
+//     database: process.env.DB_NAME || 'rwanda_eats_reserve',
+//     ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+//     clearExpired: true,
+//     checkExpirationInterval: 900000, // Check every 15 minutes
+//     expiration: 24 * 60 * 60 * 1000, // 24 hours
+//     createDatabaseTable: true,
+//     schema: {
+//         tableName: 'sessions',
+//         columnNames: {
+//             session_id: 'session_id',
+//             expires: 'expires',
+//             data: 'data'
+//         }
+//     }
+// });
 
 app.use(session({
     key: 'rwanda_eats_session',
     secret: process.env.SESSION_SECRET || 'rwanda-eats-reserve-session-secret',
-    store: sessionStore,
+    // store: sessionStore, // Temporarily disabled
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        secure: false, // Temporarily set to false for debugging
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true
     }
@@ -2593,58 +2594,7 @@ END RESTAURANT DETAILS MANAGEMENT API
 ==============================================
 */
 
-// Remove immediate listen; start server after verifying DB + email transporter
-// Startup routine: verify DB connection and email transporter, then start listening
-(async function startServer() {
-    // Log connection attempt details for debugging
-    console.log('🔧 Database Configuration:');
-    console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
-    console.log(`   Port: ${process.env.DB_PORT || '3306'}`);
-    console.log(`   User: ${process.env.DB_USER || 'root'}`);
-    console.log(`   Database: ${process.env.DB_NAME || 'rwanda_eats_reserve'}`);
-    console.log(`   SSL: ${process.env.DB_SSL || 'false'}`);
-    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`   Vercel: ${process.env.VERCEL ? 'true' : 'false'}`);
-    
-    try {
-        console.log('🔌 Attempting database connection...');
-        await db.execute('SELECT 1');
-        DB_READY = true;
-        console.log('✅ Database connection OK');
-    } catch (err) {
-        console.error('❌ Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
-        console.error('🔧 Error details:', err);
-        
-        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-            console.error('🚨 PRODUCTION ERROR: You need to set up a cloud database!');
-            console.error('📖 See URGENT_FIX.md for instructions');
-            DB_READY = false;
-        } else {
-            process.exit(1);
-        }
-    }
-
-    try {
-        const emailResults = await EmailService.testConfiguration();
-        console.log('📧 Email Service Status:');
-        console.log(`   Brevo: ${emailResults.brevo.configured ? (emailResults.brevo.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
-        console.log(`   MailerSend: ${emailResults.mailersend.configured ? (emailResults.mailersend.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
-    } catch (error) {
-        console.error('⚠️ Email service test failed:', error.message);
-    }
-
-    // If running on Vercel, avoid calling listen (serverless runtime handles requests)
-    if (process.env.VERCEL) {
-        console.log('Detected Vercel environment. Skipping app.listen; exporting app for serverless usage.');
-        return;
-    }
-
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`Customer interface: http://localhost:${PORT}`);
-        console.log(`Admin login: http://localhost:${PORT}/login`);
-    });
-})();
+// Server startup moved to end of file
 
 // Export the app for serverless platforms like Vercel
 module.exports = app;
@@ -4294,3 +4244,56 @@ Usage Examples:
 - NotificationService.sendPasswordResetEmail(user, code)
 ==============================================
 */
+
+// Remove immediate listen; start server after verifying DB + email transporter
+// Startup routine: verify DB connection and email transporter, then start listening
+(async function startServer() {
+    // Log connection attempt details for debugging
+    console.log('🔧 Database Configuration:');
+    console.log(`   Host: ${process.env.DB_HOST || 'localhost'}`);
+    console.log(`   Port: ${process.env.DB_PORT || '3306'}`);
+    console.log(`   User: ${process.env.DB_USER || 'root'}`);
+    console.log(`   Database: ${process.env.DB_NAME || 'rwanda_eats_reserve'}`);
+    console.log(`   SSL: ${process.env.DB_SSL || 'false'}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Vercel: ${process.env.VERCEL ? 'true' : 'false'}`);
+    
+    try {
+        console.log('🔌 Attempting database connection...');
+        await db.execute('SELECT 1');
+        DB_READY = true;
+        console.log('✅ Database connection OK');
+    } catch (err) {
+        console.error('❌ Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
+        console.error('🔧 Error details:', err);
+        
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+            console.error('🚨 PRODUCTION ERROR: You need to set up a cloud database!');
+            console.error('📖 See URGENT_FIX.md for instructions');
+            DB_READY = false;
+        } else {
+            process.exit(1);
+        }
+    }
+
+    try {
+        const emailResults = await EmailService.testConfiguration();
+        console.log('📧 Email Service Status:');
+        console.log(`   Brevo: ${emailResults.brevo.configured ? (emailResults.brevo.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
+        console.log(`   MailerSend: ${emailResults.mailersend.configured ? (emailResults.mailersend.working ? '✅ Active' : '⚠️ Configured but not working') : '❌ Not configured'}`);
+    } catch (error) {
+        console.error('⚠️ Email service test failed:', error.message);
+    }
+
+    // If running on Vercel, avoid calling listen (serverless runtime handles requests)
+    if (process.env.VERCEL) {
+        console.log('Detected Vercel environment. Skipping app.listen; exporting app for serverless usage.');
+        return;
+    }
+
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Customer interface: http://localhost:${PORT}`);
+        console.log(`Admin login: http://localhost:${PORT}/login`);
+    });
+})();
