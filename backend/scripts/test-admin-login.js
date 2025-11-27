@@ -12,9 +12,9 @@ async function testLogin() {
 
         // Test credentials
         const testAccounts = [
-            { email: 'admin@rwandaeats.com', password: 'admin123', expectedType: 'system_admin' },
-            { email: 'admin@millecollines.rw', password: 'restaurant123', expectedType: 'restaurant_admin' },
-            { email: 'john@example.com', password: 'customer123', expectedType: 'customer' }
+            { email: 'admin@rwandaeats.com', password: 'RwandaEats@2025!Secure', expectedType: 'system_admin' },
+            { email: 'admin@millecollines.rw', password: 'MilleCollines@2025!Admin', expectedType: 'restaurant_admin' },
+            { email: 'john@example.com', password: 'Customer@2025!Secure', expectedType: 'customer' }
         ];
 
         for (const account of testAccounts) {

@@ -211,7 +211,7 @@ async function setupDatabase() {
 
         // Hash passwords
         console.log('Generating password hashes...');
-        const passwordHash = await bcrypt.hash('admin123', 12);
+        const passwordHash = await bcrypt.hash('RwandaEats@2025!Secure', 12);
         console.log('✓ Passwords hashed\n');
 
         // Insert sample data
@@ -272,7 +272,7 @@ async function setupDatabase() {
         console.log('===============================================');
         console.log('✓ DATABASE SETUP COMPLETED SUCCESSFULLY!');
         console.log('===============================================\n');
-        console.log('Test Accounts (password for all: admin123):');
+        console.log('Test Accounts (refer to ADMIN_PASSWORD_UPDATE.md for credentials):');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('System Admin:      admin@rwandaeats.com');
         console.log('Restaurant Admin:  admin@millecollines.rw');

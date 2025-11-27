@@ -191,10 +191,8 @@ CREATE TABLE table_availability (
     UNIQUE KEY unique_slot (restaurant_id, date, time_slot)
 );
 
--- Insert sample users (passwords are hashed versions of simple passwords)
--- System Admin: admin@rwandaeats.com / admin123
--- Restaurant Admin: admin@millecollines.rw / restaurant123  
--- Customer: john@example.com / customer123
+-- Insert sample users with secure passwords
+-- NOTE: Use ADMIN_PASSWORD_UPDATE.md for secure credentials
 
 INSERT INTO users (name, email, password_hash, phone, user_type, email_verified) VALUES
 ('System Admin', 'admin@rwandaeats.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIRSk6uPPa', '+250788000001', 'system_admin', TRUE),
@@ -246,7 +244,4 @@ INSERT INTO sms_templates (name, message, is_active) VALUES
 
 -- Success message
 SELECT 'Database setup completed successfully!' AS Status;
-SELECT 'Test Accounts Created:' AS Info;
-SELECT 'System Admin: admin@rwandaeats.com / admin123' AS Account;
-SELECT 'Restaurant Admin: admin@millecollines.rw / restaurant123' AS Account;
-SELECT 'Customer: john@example.com / customer123' AS Account;
+SELECT 'Test accounts created - refer to ADMIN_PASSWORD_UPDATE.md for credentials' AS Info;

@@ -7,7 +7,7 @@ async function resetPassword() {
 
     try {
         const email = 'admin@heaven.rw';
-        const newPassword = 'admin123';
+        const newPassword = 'MilleCollines@2025!Admin';
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         await db.execute(

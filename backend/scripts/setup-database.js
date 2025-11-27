@@ -173,9 +173,9 @@ async function setupDatabase() {
         console.log('Tables created successfully');
 
         // Hash passwords
-        const adminPassword = await bcrypt.hash('admin123', 12);
-        const restaurantPassword = await bcrypt.hash('restaurant123', 12);
-        const customerPassword = await bcrypt.hash('customer123', 12);
+        const adminPassword = await bcrypt.hash('RwandaEats@2025!Secure', 12);
+        const restaurantPassword = await bcrypt.hash('MilleCollines@2025!Admin', 12);
+        const customerPassword = await bcrypt.hash('Customer@2025!Secure', 12);
 
         // Insert sample users
         const insertUsers = `
@@ -254,16 +254,14 @@ async function setupDatabase() {
         console.log('\n=================================');
         console.log('Database setup completed successfully!');
         console.log('=================================\n');
-        console.log('Test Accounts:');
+        console.log('Test Accounts Created:');
         console.log('1. System Admin:');
-        console.log('   Email: admin@rwandaeats.com');
-        console.log('   Password: admin123\n');
+        console.log('   Email: admin@rwandaeats.com\n');
         console.log('2. Restaurant Admin:');
-        console.log('   Email: admin@millecollines.rw');
-        console.log('   Password: restaurant123\n');
+        console.log('   Email: admin@millecollines.rw\n');
         console.log('3. Customer:');
-        console.log('   Email: john@example.com');
-        console.log('   Password: customer123\n');
+        console.log('   Email: john@example.com\n');
+        console.log('Refer to ADMIN_PASSWORD_UPDATE.md for secure credentials\n');
 
     } catch (error) {
         console.error('Error setting up database:', error);
