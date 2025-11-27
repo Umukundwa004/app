@@ -1630,7 +1630,7 @@ app.get('/api/restaurants', async (req, res) => {
         const { search, location, cuisine, price_range, limit } = req.query;
         
         let query = `
-            SELECT r.*, u.name as admin_name,
+            SELECT r.*, ANY_VALUE(u.name) as admin_name,
             GROUP_CONCAT(DISTINCT rc.cuisine_name SEPARATOR ', ') as cuisine_types
             FROM restaurants r 
             LEFT JOIN users u ON r.restaurant_admin_id = u.id

@@ -22,46 +22,46 @@
             <div class="text-center mb-8">
                 <div class="flex items-center justify-center mb-4">
                     <img src="/views/images/logo.jpeg" alt="Rwanda Eats Reserve Logo" class="h-16 w-16 rounded-lg object-cover mr-3" />
-                    <h1 class="text-3xl font-bold text-black">Rwanda Eats Reserve</h1>
+                    <h1 class="text-3xl font-bold text-brown-800">Rwanda Eats Reserve</h1>
                 </div>
-                <h2 class="text-2xl font-bold text-black">Sign In</h2>
-                <p class="text-black mt-2">Access your account to manage reservations</p>
+                <h2 class="text-2xl font-bold text-brown-700">Sign In</h2>
+                <p class="text-brown-600 mt-2">Access your account to manage reservations</p>
             </div>
             
             <form id="login-form" class="space-y-6">
                 <div>
-                    <label class="block text-black mb-2 font-medium" for="email">Email Address</label>
-                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <label class="block text-brown-700 mb-2 font-medium" for="email">Email Address</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
                 </div>
                 
                 <div>
-                    <label class="block text-black mb-2 font-medium" for="password">Password</label>
-                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" required>
+                    <label class="block text-brown-700 mb-2 font-medium" for="password">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
                 </div>
                 
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <input type="checkbox" id="remember" class="h-4 w-4 text-black focus:ring-black border-gray-300 rounded">
-                        <label for="remember" class="ml-2 block text-sm text-black">Remember me</label>
+                        <input type="checkbox" id="remember" class="h-4 w-4 text-brown-600 focus:ring-brown-500 border-brown-300 rounded">
+                        <label for="remember" class="ml-2 block text-sm text-brown-700">Remember me</label>
                     </div>
-                    <a href="/forgot-password" class="text-sm text-black hover:underline">Forgot password?</a>
+                    <a href="/forgot-password" class="text-sm text-brown-600 hover:text-brown-800">Forgot password?</a>
                 </div>
                 
-                <button type="submit" class="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition font-semibold">
+                <button type="submit" class="w-full bg-brown-600 text-white py-3 rounded-lg hover:bg-brown-700 transition font-semibold">
                     Sign In
                 </button>
                 
                 <div class="text-center">
-                    <p class="text-black">
+                    <p class="text-brown-600">
                         Don't have an account? 
-                        <a href="/register" class="text-black hover:underline font-medium">Sign up</a>
+                        <a href="/register" class="text-brown-600 hover:text-brown-800 font-medium">Sign up</a>
                     </p>
                 </div>
             </form>
         </div>
         
         <div class="text-center">
-            <a href="/" class="text-black hover:underline">
+            <a href="/" class="text-brown-600 hover:text-brown-800">
                 <i class="fas fa-arrow-left mr-2"></i>Back to Customer Site
             </a>
         </div>
@@ -71,7 +71,7 @@
     <div id="forgot-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-black">Reset Password</h3>
+                <h3 class="text-xl font-bold text-brown-800">Reset Password</h3>
                 <button id="close-forgot-password" class="text-brown-500 hover:text-brown-700">
                     <i class="fas fa-times"></i>
                 </button>
@@ -80,14 +80,14 @@
             <!-- Step 1: Email Entry -->
             <form id="forgot-password-form" class="step-1">
                 <div class="mb-4">
-                    <label class="block text-black mb-2 font-medium" for="reset-email">Email Address</label>
+                    <label class="block text-brown-700 mb-2 font-medium" for="reset-email">Email Address</label>
                     <input type="email" id="reset-email" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required>
                 </div>
                 <div class="flex justify-end">
-                    <button type="button" id="cancel-forgot-password" class="mr-4 px-4 py-2 text-black hover:underline">
+                    <button type="button" id="cancel-forgot-password" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800">
                         Cancel
                     </button>
-                    <button type="submit" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         Send Verification Code
                     </button>
                 </div>
@@ -96,15 +96,15 @@
             <!-- Step 2: Verification Code -->
             <form id="verify-code-form" class="step-2 hidden">
                 <div class="mb-4">
-                    <p class="text-black mb-3">Enter the 6-digit verification code sent to your email.</p>
-                    <label class="block text-black mb-2 font-medium" for="verification-code">Verification Code</label>
+                    <p class="text-brown-600 mb-3">Enter the 6-digit verification code sent to your email.</p>
+                    <label class="block text-brown-700 mb-2 font-medium" for="verification-code">Verification Code</label>
                     <input type="text" id="verification-code" maxlength="6" pattern="[0-9]{6}" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500 text-center text-2xl tracking-widest" required placeholder="000000">
                 </div>
                 <div class="flex justify-end">
-                    <button type="button" id="back-to-email" class="mr-4 px-4 py-2 text-black hover:underline">
+                    <button type="button" id="back-to-email" class="mr-4 px-4 py-2 text-brown-600 hover:text-brown-800">
                         Back
                     </button>
-                    <button type="submit" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         Verify Code
                     </button>
                 </div>
@@ -113,15 +113,15 @@
             <!-- Step 3: New Password -->
             <form id="reset-password-form" class="step-3 hidden">
                 <div class="mb-4">
-                    <label class="block text-black mb-2 font-medium" for="new-password">New Password</label>
+                    <label class="block text-brown-700 mb-2 font-medium" for="new-password">New Password</label>
                     <input type="password" id="new-password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required minlength="6">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-black mb-2 font-medium" for="confirm-password">Confirm Password</label>
+                    <label class="block text-brown-700 mb-2 font-medium" for="confirm-password">Confirm Password</label>
                     <input type="password" id="confirm-password" class="w-full px-3 py-2 border border-brown-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brown-500" required minlength="6">
                 </div>
                 <div class="flex justify-end">
-                    <button type="submit" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                    <button type="submit" class="bg-brown-600 text-white px-4 py-2 rounded-lg hover:bg-brown-700 transition">
                         Reset Password
                     </button>
                 </div>
