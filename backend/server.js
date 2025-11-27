@@ -686,7 +686,12 @@ class AuditLogService {
                 [userId, action, resourceType, resourceId, req?.ip, req?.get('User-Agent'), details ? JSON.stringify(details) : null]
             );
         } catch (error) {
-            console.error('Error logging action:', error);
+            // Don't throw - just log the error so it doesn't break the main flow
+            if (error.code === 'ER_NO_SUCH_TABLE') {
+                console.warn('audit_logs table does not exist. Skipping audit logging.');
+            } else {
+                console.error('Error logging action:', error.message);
+            }
         }
     }
 }
@@ -875,7 +880,7 @@ app.post('/api/auth/login', async (req, res) => {
 
         // Check if account is locked
         if (user.account_locked) {
-            return res.status(423).json({ error: 'Account is locked. Please reset your password.' });
+            return res.status(423).json({ error: 'Account is locked. Please contact support or reset your password.' });
         }
 
         // Verify password
@@ -883,13 +888,17 @@ app.post('/api/auth/login', async (req, res) => {
         
         if (!isValidPassword) {
             // Increment login attempts
-            const newAttempts = user.login_attempts + 1;
+            const newAttempts = (user.login_attempts || 0) + 1;
             const lockAccount = newAttempts >= 5;
             
-            await db.execute(
-                'UPDATE users SET login_attempts = ?, account_locked = ? WHERE id = ?',
-                [newAttempts, lockAccount, user.id]
-            );
+            try {
+                await db.execute(
+                    'UPDATE users SET login_attempts = ?, account_locked = ? WHERE id = ?',
+                    [newAttempts, lockAccount, user.id]
+                );
+            } catch (updateError) {
+                console.error('Failed to update login attempts:', updateError);
+            }
 
             return res.status(401).json({ 
                 error: lockAccount ? 
@@ -899,10 +908,14 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Reset login attempts on successful login
-        await db.execute(
-            'UPDATE users SET login_attempts = 0, last_login = NOW() WHERE id = ?',
-            [user.id]
-        );
+        try {
+            await db.execute(
+                'UPDATE users SET login_attempts = 0, last_login = NOW() WHERE id = ?',
+                [user.id]
+            );
+        } catch (updateError) {
+            console.error('Failed to reset login attempts:', updateError);
+        }
 
         // Create session
         req.session.user = {
@@ -919,8 +932,12 @@ app.post('/api/auth/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        // Log the action
-        await AuditLogService.logAction(user.id, 'USER_LOGIN', 'user', user.id, { email }, req);
+        // Log the action (don't let logging failures break login)
+        try {
+            await AuditLogService.logAction(user.id, 'USER_LOGIN', 'user', user.id, { email }, req);
+        } catch (logError) {
+            console.error('Failed to log login action, but login succeeded:', logError);
+        }
 
         res.json({ 
             message: 'Login successful', 
@@ -929,7 +946,9 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Login error stack:', error.stack);
+        console.error('Login error code:', error.code);
+        res.status(500).json({ error: 'Internal server error. Please try again later.', details: process.env.NODE_ENV === 'development' ? error.message : undefined });
     }
 });
 
