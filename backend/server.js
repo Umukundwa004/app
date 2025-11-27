@@ -39,13 +39,34 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 // Cloudinary storage for file uploads
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'rwanda-eats-restaurants',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-        transformation: [{ width: 1200, height: 800, crop: 'fill', quality: 'auto' }],
-        public_id: (req, file) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            return file.fieldname + '-' + uniqueSuffix;
+    params: (req, file) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        
+        // Determine resource type and folder based on file type
+        if (file.fieldname === 'video') {
+            return {
+                folder: 'rwanda-eats-restaurants/videos',
+                resource_type: 'video',
+                allowed_formats: ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'],
+                public_id: `video-${uniqueSuffix}`,
+                chunk_size: 6000000 // 6MB chunks for large videos
+            };
+        } else if (file.fieldname === 'menu_pdf' || file.fieldname === 'certificate') {
+            return {
+                folder: 'rwanda-eats-restaurants/documents',
+                resource_type: 'raw',
+                allowed_formats: ['pdf', 'doc', 'docx'],
+                public_id: `${file.fieldname}-${uniqueSuffix}`
+            };
+        } else {
+            // Images (default)
+            return {
+                folder: 'rwanda-eats-restaurants/images',
+                resource_type: 'image',
+                allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                transformation: [{ width: 1200, height: 800, crop: 'fill', quality: 'auto' }],
+                public_id: `image-${uniqueSuffix}`
+            };
         }
     }
 });
@@ -65,6 +86,12 @@ const fileFilter = (req, file, cb) => {
             cb(null, true);
         } else {
             cb(new Error('Only video files are allowed!'), false);
+        }
+    } else if (file.fieldname === 'menu_pdf' || file.fieldname === 'certificate') {
+        if (file.mimetype === 'application/pdf' || file.mimetype.includes('document')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF and document files are allowed!'), false);
         }
     } else {
         cb(null, true);
@@ -818,6 +845,10 @@ app.get('/verify-email', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'verify-email.html'));
 });
 
+app.get('/forgot-password', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'forgot-password.html'));
+});
+
 app.get('/profile', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'views', 'customer-profile.html'));
 });
@@ -827,11 +858,18 @@ app.get('/profile', requireAuth, (req, res) => {
 // User Registration (FR 3.1)
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password, phone, user_type = 'customer' } = req.body;
+        const { name, email, password, phone, user_type = 'customer', recovery_code } = req.body;
 
         // Validate input
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
+        }
+        
+        // Validate recovery code for customers
+        if (user_type === 'customer') {
+            if (!recovery_code || !/^\d{4}$/.test(recovery_code)) {
+                return res.status(400).json({ error: '4-digit recovery code is required' });
+            }
         }
 
         // Validate email format
@@ -850,10 +888,10 @@ app.post('/api/auth/register', async (req, res) => {
         const verificationToken = generateToken();
         const verificationTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Create user (store verification token and expiry)
+        // Create user (store verification token, expiry, and recovery code)
         const [result] = await db.execute(
-            'INSERT INTO users (name, email, password_hash, phone, user_type, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [name, email, passwordHash, phone, user_type, verificationToken, verificationTokenExpires]
+            'INSERT INTO users (name, email, password_hash, recovery_code, phone, user_type, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [name, email, passwordHash, recovery_code || null, phone, user_type, verificationToken, verificationTokenExpires]
         );
 
         const userId = result.insertId;
@@ -1095,6 +1133,69 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Password Reset with Recovery Code
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, recovery_code, new_password } = req.body;
+
+        if (!email || !recovery_code || !new_password) {
+            return res.status(400).json({ error: 'Email, recovery code, and new password are required' });
+        }
+
+        // Validate recovery code format
+        if (!/^\d{4}$/.test(recovery_code)) {
+            return res.status(400).json({ error: 'Recovery code must be 4 digits' });
+        }
+
+        // Validate password length
+        if (new_password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        // Find user with matching email and recovery code
+        const [users] = await db.execute(
+            'SELECT id, name, email FROM users WHERE email = ? AND recovery_code = ?',
+            [email, recovery_code]
+        );
+
+        if (!users || users.length === 0) {
+            return res.status(401).json({ error: 'Invalid email or recovery code' });
+        }
+
+        const user = users[0];
+
+        // Hash new password
+        const password_hash = await bcrypt.hash(new_password, BCRYPT_ROUNDS);
+
+        // Update password and unlock account
+        await db.execute(
+            'UPDATE users SET password_hash = ?, login_attempts = 0, account_locked = FALSE WHERE id = ?',
+            [password_hash, user.id]
+        );
+
+        // Log the action
+        try {
+            await AuditLogService.logAction(user.id, 'PASSWORD_RESET', 'user', user.id, { 
+                email,
+                method: 'recovery_code' 
+            }, req);
+        } catch (logError) {
+            console.error('⚠️ Failed to log password reset:', logError);
+        }
+
+        res.json({ 
+            message: 'Password reset successful',
+            user: {
+                name: user.name,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('❌ Password reset error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
 // Email Verification
 app.post('/api/auth/verify-email', async (req, res) => {
     try {
@@ -1140,112 +1241,7 @@ app.post('/api/auth/verify-email', async (req, res) => {
     }
 });
 
-// Password Reset Request
-app.post('/api/auth/forgot-password', async (req, res) => {
-    try {
-        const { email } = req.body;
 
-        if (!email) {
-            return res.status(400).json({ error: 'Email is required' });
-        }
-
-        const [users] = await db.execute('SELECT id, name, email FROM users WHERE email = ?', [email]);
-        
-        if (users.length > 0) {
-            const user = users[0];
-            // Generate 6-digit verification code and store only its hash
-            const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-            const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-            const resetTokenHash = crypto.createHash('sha256').update(verificationCode).digest('hex');
-
-            await db.execute(
-                'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-                [resetTokenHash, resetTokenExpires, user.id]
-            );
-
-            // Send verification code email using enhanced template
-            try {
-                await NotificationService.sendPasswordResetEmail(user, verificationCode);
-            } catch (e) {
-                console.error('Error sending reset email:', e);
-            }
-
-            // Log the action
-            await AuditLogService.logAction(user.id, 'PASSWORD_RESET_REQUEST', 'user', user.id, {}, req);
-            
-            res.json({ message: 'Verification code sent to your email' });
-        } else {
-            // Return success even if user not found (security best practice)
-            res.json({ message: 'Verification code sent to your email' });
-        }
-    } catch (error) {
-        console.error('Password reset request error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Verify Reset Code
-app.post('/api/auth/verify-reset-code', async (req, res) => {
-    try {
-        const { email, code } = req.body;
-
-        if (!email || !code) {
-            return res.status(400).json({ error: 'Email and code are required' });
-        }
-
-        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-        const [users] = await db.execute(
-            'SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expires > NOW()',
-            [email, codeHash]
-        );
-
-        if (users.length === 0) {
-            return res.status(400).json({ error: 'Invalid or expired verification code' });
-        }
-
-        res.json({ message: 'Code verified successfully' });
-    } catch (error) {
-        console.error('Code verification error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Password Reset
-app.post('/api/auth/reset-password', async (req, res) => {
-    try {
-        const { email, code, newPassword } = req.body;
-
-        if (!email || !code || !newPassword) {
-            return res.status(400).json({ error: 'Email, code and new password are required' });
-        }
-
-        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
-        const [users] = await db.execute(
-            'SELECT id FROM users WHERE email = ? AND reset_token = ? AND reset_token_expires > NOW()',
-            [email, codeHash]
-        );
-
-        if (users.length === 0) {
-            return res.status(400).json({ error: 'Invalid or expired verification code' });
-        }
-
-        const user = users[0];
-        const passwordHash = await hashPassword(newPassword);
-
-        await db.execute(
-            'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, account_locked = FALSE, login_attempts = 0 WHERE id = ?',
-            [passwordHash, user.id]
-        );
-
-        // Log the action
-        await AuditLogService.logAction(user.id, 'PASSWORD_RESET', 'user', user.id, {}, req);
-
-        res.json({ message: 'Password reset successfully' });
-    } catch (error) {
-        console.error('Password reset error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
 // Email Campaign Management (Brevo)
 app.post('/api/email/campaign', requireAuth, async (req, res) => {
@@ -2544,12 +2540,12 @@ app.patch('/api/restaurants/:id/settings', requireAuth, upload.fields([{ name: '
         // Handle file uploads
         if (req.files) {
             if (req.files.menu_pdf && req.files.menu_pdf[0]) {
-                const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+                const menu_pdf_url = req.files.menu_pdf[0].path || req.files.menu_pdf[0].secure_url || req.files.menu_pdf[0].url;
                 updates.push('menu_pdf_url = ?');
                 values.push(menu_pdf_url);
             }
             if (req.files.certificate && req.files.certificate[0]) {
-                const certificate_url = '/uploads/restaurants/' + req.files.certificate[0].filename;
+                const certificate_url = req.files.certificate[0].path || req.files.certificate[0].secure_url || req.files.certificate[0].url;
                 updates.push('certificate_url = ?');
                 values.push(certificate_url);
             }
@@ -2934,11 +2930,11 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
         let menu_pdf_url = null;
         
         if (req.files && req.files.video && req.files.video[0]) {
-            video_url = '/uploads/restaurants/' + req.files.video[0].filename;
+            video_url = req.files.video[0].path || req.files.video[0].secure_url || req.files.video[0].url;
         }
         
         if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
-            menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+            menu_pdf_url = req.files.menu_pdf[0].path || req.files.menu_pdf[0].secure_url || req.files.menu_pdf[0].url;
         }
         
         // Insert restaurant (without image_url for now, will use primary from restaurant_images)
@@ -2955,7 +2951,7 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
         // Handle multiple images
         if (req.files && req.files.images && req.files.images.length > 0) {
             for (let i = 0; i < req.files.images.length; i++) {
-                const image_url = '/uploads/restaurants/' + req.files.images[i].filename;
+                const image_url = req.files.images[i].path || req.files.images[i].secure_url || req.files.images[i].url;
                 const is_primary = i === 0; // First image is primary
                 const display_order = i;
                 
@@ -2967,7 +2963,7 @@ app.post('/api/restaurant-admin/restaurants', requireRestaurantAdmin, upload.fie
             }
             
             // Update restaurant with primary image URL for backward compatibility
-            const primaryImageUrl = '/uploads/restaurants/' + req.files.images[0].filename;
+            const primaryImageUrl = req.files.images[0].path || req.files.images[0].secure_url || req.files.images[0].url;
             await db.execute(
                 `UPDATE restaurants SET image_url = ? WHERE id = ?`,
                 [primaryImageUrl, restaurantId]
@@ -3021,14 +3017,14 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
         
         // Handle video upload
         if (req.files && req.files.video && req.files.video[0]) {
-            const video_url = '/uploads/restaurants/' + req.files.video[0].filename;
+            const video_url = req.files.video[0].path || req.files.video[0].secure_url || req.files.video[0].url;
             updateQuery += ', video_url = ?';
             updateParams.push(video_url);
         }
         
         // Handle menu PDF/image upload
         if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
-            const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+            const menu_pdf_url = req.files.menu_pdf[0].path || req.files.menu_pdf[0].secure_url || req.files.menu_pdf[0].url;
             updateQuery += ', menu_pdf_url = ?';
             updateParams.push(menu_pdf_url);
         }
@@ -3050,7 +3046,7 @@ app.put('/api/restaurants/:id', requireRestaurantAdmin, upload.fields([{ name: '
             let firstNewImage = null;
             
             for (let i = 0; i < req.files.images.length; i++) {
-                const image_url = '/uploads/restaurants/' + req.files.images[i].filename;
+                const image_url = req.files.images[i].path || req.files.images[i].secure_url || req.files.images[i].url;
                 
                 // If this is the first new image and no images exist, make it primary
                 const [existingImages] = await db.execute(
@@ -3910,14 +3906,14 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
         
         // Handle video upload
         if (req.files && req.files.video && req.files.video[0]) {
-            const video_url = '/uploads/restaurants/' + req.files.video[0].filename;
+            const video_url = req.files.video[0].path || req.files.video[0].secure_url || req.files.video[0].url;
             updateFields.push('video_url = ?');
             updateParams.push(video_url);
         }
         
         // Handle menu PDF upload
         if (req.files && req.files.menu_pdf && req.files.menu_pdf[0]) {
-            const menu_pdf_url = '/uploads/restaurants/' + req.files.menu_pdf[0].filename;
+            const menu_pdf_url = req.files.menu_pdf[0].path || req.files.menu_pdf[0].secure_url || req.files.menu_pdf[0].url;
             updateFields.push('menu_pdf_url = ?');
             updateParams.push(menu_pdf_url);
         }
@@ -3969,7 +3965,7 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
                 const hasExistingImages = existingImages[0].count > 0;
                 
                 for (let i = 0; i < req.files.images.length; i++) {
-                    const image_url = '/uploads/restaurants/' + req.files.images[i].filename;
+                    const image_url = req.files.images[i].path || req.files.images[i].secure_url || req.files.images[i].url;
                     const is_primary = !hasExistingImages && i === 0; // First image is primary only if no existing images
                     const display_order = nextOrder + i;
                     
@@ -3982,7 +3978,7 @@ app.put('/api/system-admin/restaurants/:id', requireSystemAdmin, upload.fields([
                 
                 // Update restaurant's image_url with the first new image if no images existed before
                 if (!hasExistingImages && req.files.images.length > 0) {
-                    const primaryImageUrl = '/uploads/restaurants/' + req.files.images[0].filename;
+                    const primaryImageUrl = req.files.images[0].path || req.files.images[0].secure_url || req.files.images[0].url;
                     await connection.execute(
                         `UPDATE restaurants SET image_url = ? WHERE id = ?`,
                         [primaryImageUrl, req.params.id]
@@ -4418,6 +4414,94 @@ Usage Examples:
     } catch (error) {
         console.error('⚠️ Email service test failed:', error.message);
     }
+
+// Profile Management API Endpoints
+app.put('/api/profile/email', requireAuth, async (req, res) => {
+    try {
+        const { newEmail, currentPassword } = req.body;
+        const userId = req.session.user.id;
+
+        if (!newEmail || !currentPassword) {
+            return res.status(400).json({ error: 'New email and current password are required' });
+        }
+
+        // Validate email format
+        if (!isValidEmail(newEmail)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Get current user
+        const [users] = await db.execute('SELECT password_hash, email FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Verify current password
+        const isValid = await bcryptjs.compare(currentPassword, users[0].password_hash);
+        if (!isValid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        // Check if new email already exists
+        const [existingEmail] = await db.execute('SELECT id FROM users WHERE email = ? AND id != ?', [newEmail, userId]);
+        if (existingEmail.length > 0) {
+            return res.status(400).json({ error: 'Email already in use' });
+        }
+
+        // Update email
+        await db.execute('UPDATE users SET email = ? WHERE id = ?', [newEmail, userId]);
+
+        // Update session
+        req.session.user.email = newEmail;
+
+        await AuditLogService.logAction(userId, 'EMAIL_UPDATED', 'user', userId, { old_email: users[0].email, new_email: newEmail }, req);
+
+        res.json({ message: 'Email updated successfully', email: newEmail });
+    } catch (error) {
+        console.error('Error updating email:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.put('/api/profile/password', requireAuth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.session.user.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current password and new password are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+        }
+
+        // Get current user
+        const [users] = await db.execute('SELECT password_hash FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Verify current password
+        const isValid = await bcryptjs.compare(currentPassword, users[0].password_hash);
+        if (!isValid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        // Hash new password
+        const newPasswordHash = await hashPassword(newPassword);
+
+        // Update password
+        await db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [newPasswordHash, userId]);
+
+        await AuditLogService.logAction(userId, 'PASSWORD_UPDATED', 'user', userId, {}, req);
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error updating password:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
     // If running on Vercel, avoid calling listen (serverless runtime handles requests)
     if (process.env.VERCEL) {

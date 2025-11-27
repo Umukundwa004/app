@@ -335,9 +335,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/restaurants');
             const restaurants = await response.json();
             
-            // Filter to show only favorited restaurants
+            // Show favorite restaurants if any exist, otherwise show top 6 restaurants
             const favoriteRestaurants = restaurants.filter(r => favorites.includes(r.id.toString()));
-            displayFeaturedRestaurants(favoriteRestaurants);
+            const restaurantsToShow = favoriteRestaurants.length > 0 
+                ? favoriteRestaurants 
+                : restaurants.slice(0, 6);
+            
+            displayFeaturedRestaurants(restaurantsToShow);
         } catch (error) {
             console.error('Error loading featured restaurants:', error);
         }

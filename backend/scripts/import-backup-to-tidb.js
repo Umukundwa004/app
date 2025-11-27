@@ -3,17 +3,18 @@ const fs = require('fs');
 const { createConnection } = require('../utils/db');
 
 async function importBackup() {
-  const backupFile = 'backup-utf8.sql';
+  const backupFile = 'backup-updated-utf8.sql';
   
   console.log('=== TiDB Cloud Import ===\n');
   
-  // Check if UTF-8 backup exists, create if needed
+  // Check if backup exists
   if (!fs.existsSync(backupFile)) {
-    console.log('Creating UTF-8 version of backup.sql...');
-    const originalContent = fs.readFileSync('backup.sql', 'utf8');
-    const utf8Content = originalContent.replace(/SET NAMES cp850;/g, 'SET NAMES utf8mb4;');
-    fs.writeFileSync(backupFile, utf8Content, 'utf8');
-    console.log('✓ UTF-8 backup created\n');
+    console.error(`Error: ${backupFile} not found`);
+    console.log('Please export your database first:');
+    console.log('  Run: .\\export-database.ps1');
+    console.log('  Or use the backup file in the root directory');
+    process.exitCode = 1;
+    return;
   }
 
   console.log(`Reading ${backupFile}...`);

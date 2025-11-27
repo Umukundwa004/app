@@ -312,6 +312,23 @@ class SystemAdmin {
         });
 
         console.debug('SystemAdmin: setupEventListeners complete');
+        
+        // Profile form handlers
+        const changeEmailForm = document.getElementById('change-email-form');
+        if (changeEmailForm) {
+            changeEmailForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.changeEmail();
+            });
+        }
+
+        const changePasswordForm = document.getElementById('change-password-form');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.changePassword();
+            });
+        }
     }
 
     switchTab(tabName) {
@@ -348,6 +365,9 @@ class SystemAdmin {
                 // Ensure no media upload controls are present in this tab
                 try { this.removeReservationMediaControls(); } catch (e) {}
                 this.loadAllReservations();
+                break;
+            case 'profile':
+                this.loadProfile();
                 break;
             case 'system':
                 // Settings are static for now
@@ -1940,6 +1960,20 @@ class SystemAdmin {
         reader.readAsDataURL(file);
     }
 
+    async loadProfile() {
+        try {
+            const response = await fetch('/api/auth/me');
+            if (response.ok) {
+                const user = await response.json();
+                document.getElementById('profile-name').textContent = user.name || 'N/A';
+                document.getElementById('profile-email').textContent = user.email || 'N/A';
+                document.getElementById('profile-type').textContent = user.user_type || 'N/A';
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    }
+
     async logout() {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
@@ -1947,6 +1981,93 @@ class SystemAdmin {
         } catch (error) {
             console.error('Logout error:', error);
             window.location.href = '/login';
+        }
+    }
+
+    async changeEmail() {
+        const newEmail = document.getElementById('new-email').value;
+        const confirmEmail = document.getElementById('confirm-email').value;
+        const currentPassword = document.getElementById('email-current-password').value;
+        const feedback = document.getElementById('email-change-feedback');
+
+        feedback.textContent = '';
+        feedback.className = 'text-sm';
+
+        if (newEmail !== confirmEmail) {
+            feedback.textContent = 'Email addresses do not match';
+            feedback.classList.add('text-red-600');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/profile/email', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newEmail, currentPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                feedback.textContent = 'Email updated successfully!';
+                feedback.classList.add('text-green-600');
+                document.getElementById('profile-email').textContent = data.email;
+                document.getElementById('change-email-form').reset();
+                setTimeout(() => { feedback.textContent = ''; }, 3000);
+            } else {
+                feedback.textContent = data.error || 'Failed to update email';
+                feedback.classList.add('text-red-600');
+            }
+        } catch (error) {
+            console.error('Error changing email:', error);
+            feedback.textContent = 'An error occurred';
+            feedback.classList.add('text-red-600');
+        }
+    }
+
+    async changePassword() {
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmNewPassword = document.getElementById('confirm-new-password').value;
+        const feedback = document.getElementById('password-change-feedback');
+
+        feedback.textContent = '';
+        feedback.className = 'text-sm';
+
+        if (newPassword !== confirmNewPassword) {
+            feedback.textContent = 'Passwords do not match';
+            feedback.classList.add('text-red-600');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            feedback.textContent = 'Password must be at least 6 characters long';
+            feedback.classList.add('text-red-600');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/profile/password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                feedback.textContent = 'Password updated successfully!';
+                feedback.classList.add('text-green-600');
+                document.getElementById('change-password-form').reset();
+                setTimeout(() => { feedback.textContent = ''; }, 3000);
+            } else {
+                feedback.textContent = data.error || 'Failed to update password';
+                feedback.classList.add('text-red-600');
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            feedback.textContent = 'An error occurred';
+            feedback.classList.add('text-red-600');
         }
     }
 }
