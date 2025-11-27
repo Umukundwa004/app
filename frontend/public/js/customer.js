@@ -487,40 +487,56 @@ document.addEventListener('DOMContentLoaded', function() {
         
         featuredRestaurants.innerHTML = restaurants.map(restaurant => {
             const rating = parseFloat(restaurant.rating) || 0;
+            const reviewCount = restaurant.review_count || 0;
             const cuisineArray = restaurant.cuisine_types ? restaurant.cuisine_types.split(',').map(c => c.trim()) : [];
+            const priceRange = '$'.repeat(parseInt(restaurant.price_range) || 2);
             // Check if rating display is enabled (default to true if not set)
             const showRating = restaurant.rating_display !== false && rating > 0;
             
             return `
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all restaurant-card-enhanced">
-                <div class="h-32 md:h-48 bg-gray-200 flex items-center justify-center relative">
+            <div class="max-w-sm rounded-2xl shadow-md bg-white overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 reserve-btn" data-id="${restaurant.id}">
+                <!-- Image Section -->
+                <div class="relative h-48">
                     ${restaurant.image_url 
-                        ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="w-full h-full object-cover">`
-                        : `<i class="fas fa-utensils text-3xl md:text-4xl text-gray-400"></i>`
+                        ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="h-48 w-full object-cover">`
+                        : `<div class="h-48 w-full bg-gray-200 flex items-center justify-center"><i class="fas fa-utensils text-4xl text-gray-400"></i></div>`
                     }
+                    
                     ${showRating ? `
-                    <div class="absolute top-2 right-2 restaurant-card-rating">
-                        <i class="fas fa-star star-icon"></i>
-                        <span>${rating.toFixed(1)}</span>
+                    <!-- Rating Badge -->
+                    <div class="absolute bottom-3 left-3 flex items-center bg-white/95 px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
+                        <span class="text-orange-500 text-sm font-bold">★ ${rating.toFixed(1)}</span>
+                        ${reviewCount > 0 ? `<span class="text-gray-600 text-xs ml-1">(${reviewCount})</span>` : ''}
                     </div>
                     ` : ''}
-                </div>
-                <div class="p-3 md:p-6">
-                    <h3 class="text-base md:text-xl font-bold mb-1 md:mb-2 text-gray-900">${restaurant.name}</h3>
-                    <p class="text-gray-700 text-xs md:text-sm mb-2 md:mb-3">
-                        <i class="fas fa-map-marker-alt mr-1 md:mr-2 text-gray-500"></i>${restaurant.location || 'Location not specified'}
-                    </p>
                     
-                    <!-- Show badges only on medium screens and up -->
-                    <div class="hidden md:flex restaurant-card-badges mb-3">
+                    <!-- Price Tag -->
+                    <div class="absolute bottom-3 right-3 bg-white/95 px-3 py-1.5 rounded-full shadow-lg font-semibold text-gray-700 backdrop-blur-sm">
+                        ${priceRange}
+                    </div>
+                </div>
+                
+                <!-- Content Section -->
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">${restaurant.name}</h2>
+                    
+                    <!-- Tags -->
+                    ${cuisineArray.length > 0 ? `
+                    <div class="flex flex-wrap gap-2 mt-2">
                         ${cuisineArray.slice(0, 2).map(cuisine => 
-                            `<span class="restaurant-card-badge"><i class="fas fa-utensils mr-1"></i>${cuisine}</span>`
+                            `<span class="text-xs bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200 text-gray-600">${cuisine}</span>`
                         ).join('')}
                     </div>
+                    ` : ''}
                     
-                    <button class="reserve-btn w-full bg-brown-600 text-white py-2 md:py-2.5 rounded-lg hover:bg-brown-700 transition text-xs md:text-sm font-medium" data-id="${restaurant.id}">
-                        <i class="fas fa-calendar-plus mr-1 md:mr-2"></i><span class="hidden md:inline">View Details & </span>Reserve
-                    </button>
+                    <!-- Location -->
+                    <div class="flex items-center gap-1.5 text-gray-500 text-sm mt-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        <span>${restaurant.location || 'Location not specified'}</span>
+                    </div>
                 </div>
             </div>
             `;
@@ -537,47 +553,62 @@ document.addEventListener('DOMContentLoaded', function() {
         
         allRestaurants.innerHTML = restaurants.map(restaurant => {
             const rating = parseFloat(restaurant.rating) || 0;
+            const reviewCount = restaurant.review_count || 0;
             const cuisineArray = restaurant.cuisine_types ? restaurant.cuisine_types.split(',').map(c => c.trim()) : [];
             const isFavorite = favorites.includes(restaurant.id.toString());
+            const priceRange = '$'.repeat(parseInt(restaurant.price_range) || 2);
             // Check if rating display is enabled (default to true if not set)
             const showRating = restaurant.rating_display !== false && rating > 0;
             
             return `
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all restaurant-card-enhanced">
-                <div class="h-32 md:h-48 bg-gray-200 flex items-center justify-center relative">
+            <div class="max-w-sm rounded-2xl shadow-md bg-white overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 reserve-btn" data-id="${restaurant.id}">
+                <!-- Image Section -->
+                <div class="relative h-48">
                     ${restaurant.image_url 
-                        ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="w-full h-full object-cover">`
-                        : `<i class="fas fa-utensils text-3xl md:text-4xl text-gray-400"></i>`
+                        ? `<img src="${restaurant.image_url}" alt="${restaurant.name}" class="h-48 w-full object-cover">`
+                        : `<div class="h-48 w-full bg-gray-200 flex items-center justify-center"><i class="fas fa-utensils text-4xl text-gray-400"></i></div>`
                     }
-                    <button class="favorite-heart-btn ${isFavorite ? 'active' : ''}" data-id="${restaurant.id}" onclick="toggleFavorite(event, '${restaurant.id}')">
-                        💙
+                    
+                    <!-- Favorite Icon -->
+                    <button class="absolute top-3 right-3 bg-white/90 p-2 rounded-full shadow-lg hover:scale-110 transition-transform ${isFavorite ? 'text-red-500' : 'text-gray-400'}" data-id="${restaurant.id}" onclick="toggleFavorite(event, '${restaurant.id}')">
+                        ${isFavorite ? '❤️' : '🤍'}
                     </button>
+                    
                     ${showRating ? `
-                    <div class="absolute top-2 right-2 restaurant-card-rating">
-                        <i class="fas fa-star star-icon"></i>
-                        <span>${rating.toFixed(1)}</span>
+                    <!-- Rating Badge -->
+                    <div class="absolute bottom-3 left-3 flex items-center bg-white/95 px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
+                        <span class="text-orange-500 text-sm font-bold">★ ${rating.toFixed(1)}</span>
+                        ${reviewCount > 0 ? `<span class="text-gray-600 text-xs ml-1">(${reviewCount})</span>` : ''}
                     </div>
                     ` : ''}
-                </div>
-                <div class="p-3 md:p-6">
-                    <h3 class="text-base md:text-xl font-bold mb-1 md:mb-2 text-gray-900">${restaurant.name}</h3>
-                    <p class="text-gray-700 text-xs md:text-sm mb-2 md:mb-3">
-                        <i class="fas fa-map-marker-alt mr-1 md:mr-2 text-gray-500"></i>${restaurant.location || 'Location not specified'}
-                    </p>
                     
-                    <!-- Show badges only on medium screens and up -->
-                    <div class="hidden md:flex restaurant-card-badges mb-3">
+                    <!-- Price Tag -->
+                    <div class="absolute bottom-3 right-3 bg-white/95 px-3 py-1.5 rounded-full shadow-lg font-semibold text-gray-700 backdrop-blur-sm">
+                        ${priceRange}
+                    </div>
+                </div>
+                
+                <!-- Content Section -->
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">${restaurant.name}</h2>
+                    
+                    <!-- Tags -->
+                    ${cuisineArray.length > 0 ? `
+                    <div class="flex flex-wrap gap-2 mt-2">
                         ${cuisineArray.slice(0, 2).map(cuisine => 
-                            `<span class="restaurant-card-badge"><i class="fas fa-utensils mr-1"></i>${cuisine}</span>`
+                            `<span class="text-xs bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200 text-gray-600">${cuisine}</span>`
                         ).join('')}
                     </div>
+                    ` : ''}
                     
-                    <!-- Show description only on medium screens and up -->
-                    ${restaurant.description ? `<p class="hidden md:block text-xs md:text-sm text-gray-600 mb-3 line-clamp-2">${restaurant.description}</p>` : ''}
-                    
-                    <button class="reserve-btn w-full bg-brown-600 text-white py-2 md:py-2.5 rounded-lg hover:bg-brown-700 transition text-xs md:text-sm font-medium" data-id="${restaurant.id}">
-                        <i class="fas fa-calendar-plus mr-1 md:mr-2"></i><span class="hidden md:inline">View Details & </span>Reserve
-                    </button>
+                    <!-- Location -->
+                    <div class="flex items-center gap-1.5 text-gray-500 text-sm mt-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        </svg>
+                        <span>${restaurant.location || 'Location not specified'}</span>
+                    </div>
                 </div>
             </div>
             `;
