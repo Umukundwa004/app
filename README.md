@@ -2,6 +2,8 @@
 
 This repository previously contained several Markdown documents (setup, quick start, migration, implementation and feature guides). Per request, those files have been consolidated into this single canonical README so documentation is easier to find and maintain.
 
+**Note:** Vercel deployment files have been archived to `archive/` folder. This app is now deployed on Render. The archived files (`vercel.json`, `deploy.ps1`, etc.) are preserved in the `backup/vercel-files` branch if needed for reference.
+
 If you prefer any original document restored as a separate file, tell me which one and I'll restore it.
 
 ---
