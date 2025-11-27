@@ -938,6 +938,12 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Email and password are required' });
         }
 
+        // Ensure database is ready before proceeding
+        if (!DB_READY) {
+            console.error('❌ Login blocked: Database not ready');
+            return res.status(503).json({ error: 'Service unavailable. Database disconnected.' });
+        }
+
         console.log('📊 Querying database for user...');
         
         // Get user with password hash
@@ -1286,26 +1292,6 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
     res.json({ message: 'Logout successful' });
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    const status = {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        database: DB_READY ? 'connected' : 'disconnected',
-        environment: process.env.NODE_ENV || 'development',
-        version: '1.0.0'
-    };
-    
-    if (!DB_READY) {
-        return res.status(503).json({
-            ...status,
-            status: 'degraded',
-            message: 'Database connection unavailable'
-        });
-    }
-    
-    res.json(status);
-});
 
 // Get current user
 app.get('/api/auth/me', requireAuth, (req, res) => {
