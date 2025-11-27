@@ -240,10 +240,13 @@ const db = mysql.createPool({
 
 let DB_READY = false;
 
-// Middleware to short-circuit API calls if DB not ready
+// Middleware to short-circuit API calls if DB not ready (except health check)
 app.use((req, res, next) => {
-    if (!DB_READY && req.path.startsWith('/api')) {
-        return res.status(503).json({ error: 'Database not available. Please try again shortly.' });
+    if (!DB_READY && req.path.startsWith('/api') && req.path !== '/api/health') {
+        return res.status(503).json({ 
+            error: 'Database not available. Please try again shortly.',
+            hint: 'Check /api/health for status'
+        });
     }
     next();
 });
@@ -724,6 +727,45 @@ class AuditLogService {
 }
 
 // Routes
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+    const health = {
+        status: 'starting',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        database: {
+            ready: DB_READY,
+            host: process.env.DB_HOST || 'localhost',
+            name: process.env.DB_NAME || 'rwanda_eats_reserve',
+            ssl: process.env.DB_SSL || 'false'
+        },
+        email: {
+            mailersend: !!process.env.MAILERSEND_API_KEY
+        },
+        cloudinary: {
+            configured: !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY)
+        }
+    };
+
+    if (DB_READY) {
+        health.status = 'healthy';
+        try {
+            await db.execute('SELECT 1');
+            health.database.connection = 'active';
+        } catch (err) {
+            health.database.connection = 'error';
+            health.database.error = err.message;
+        }
+    } else {
+        health.status = 'unhealthy';
+        health.database.connection = 'failed';
+        health.message = 'Database connection not established';
+    }
+
+    const statusCode = DB_READY ? 200 : 503;
+    res.status(statusCode).json(health);
+});
 
 // Serve pages
 app.get('/', (req, res) => {
@@ -4330,12 +4372,28 @@ Usage Examples:
         DB_READY = true;
         console.log('✅ Database connection OK');
     } catch (err) {
-        console.error('❌ Failed to connect to the database. Please ensure MySQL is running and env vars are correct.');
-        console.error('🔧 Error details:', err);
+        console.error('❌ Failed to connect to the database.');
+        console.error('🔧 Error Code:', err.code);
+        console.error('🔧 Error Message:', err.message);
+        console.error('🔧 Error Stack:', err.stack);
         
         if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-            console.error('🚨 PRODUCTION ERROR: You need to set up a cloud database!');
-            console.error('📖 See URGENT_FIX.md for instructions');
+            console.error('🚨 PRODUCTION ERROR: Database connection failed!');
+            console.error('📋 Check these environment variables are set correctly:');
+            console.error(`   DB_HOST: ${process.env.DB_HOST ? '✓ Set' : '✗ MISSING'}`);
+            console.error(`   DB_USER: ${process.env.DB_USER ? '✓ Set' : '✗ MISSING'}`);
+            console.error(`   DB_PASSWORD: ${process.env.DB_PASSWORD ? '✓ Set (hidden)' : '✗ MISSING'}`);
+            console.error(`   DB_NAME: ${process.env.DB_NAME ? '✓ Set' : '✗ MISSING'}`);
+            console.error(`   DB_PORT: ${process.env.DB_PORT || '3306 (default)'}`);
+            console.error(`   DB_SSL: ${process.env.DB_SSL || 'false (default)'}`);
+            console.error('');
+            console.error('💡 Common issues:');
+            console.error('   1. Database server not accessible from Render');
+            console.error('   2. Firewall blocking connection');
+            console.error('   3. Wrong credentials');
+            console.error('   4. Database server not running');
+            console.error('');
+            console.error('🔍 Visit /api/health for detailed status');
             DB_READY = false;
         } else {
             process.exit(1);
